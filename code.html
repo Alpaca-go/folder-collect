@@ -1,0 +1,201 @@
+<!DOCTYPE html><html lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Contact Files</title>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            appBg: '#d6d8cf',
+            cardBg: '#c8cac0',
+            cardHighlight: '#e3e5dc',
+            cardBorder: '#b3b6aa',
+            cardDark: '#202020',
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<!-- BEGIN: Custom Styles -->
+<style data-purpose="base-layout">
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      background-color: #0c0d0e;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, sans-serif;
+    }
+    /* Hide scrollbar for clean device feel */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+<style data-purpose="folder-tab-geometry">
+    /* Physical folder styling with tab cutout and subtle tactile bevels */
+    .folder-tab {
+      position: relative;
+      background-color: #c9cbc2;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.12), 0 2px 4px -2px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      border: 1px solid #b6b9ad;
+      border-bottom: 1px solid #a6a99e;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, background-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .folder-tab:active {
+      transform: translateY(-8px) scale(1.01);
+      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.25), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+      z-index: 50 !important;
+    }
+
+    /* Stepped tab geometry for left name label cut */
+    .folder-tab::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 110px;
+      width: 14px;
+      height: 18px;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    /* Angled category index badge on the right */
+    .category-badge {
+      clip-path: polygon(18px 0%, 100% 0%, 100% 100%, 0% 100%);
+      background-color: #121212;
+      color: #f3f4f1;
+    }
+
+    /* Soft curved left shoulder indicator */
+    .tab-notch-cutout {
+      border-top-left-radius: 6px;
+      border-top-right-radius: 14px;
+    }
+
+    /* Top dynamic island container */
+    .dynamic-island {
+      width: 112px;
+      height: 30px;
+      background: #000;
+      border-radius: 20px;
+    }
+  </style>
+<!-- END: Custom Styles -->
+</head>
+<body class="p-0 sm:p-4">
+<!-- BEGIN: Phone Frame Shell -->
+<div class="relative w-full max-w-[390px] h-[844px] bg-[#d6d8cf] sm:rounded-[50px] shadow-[0_25px_70px_rgba(0,0,0,0.85)] border-[8px] sm:border-[10px] border-[#262829] overflow-hidden flex flex-col justify-between" data-purpose="iphone-frame">
+<!-- BEGIN: Top Status & Dynamic Island Area -->
+<header class="relative z-30 pt-3 px-7 flex flex-col justify-start select-none" data-purpose="status-bar-header">
+
+<!-- App Title matching the prototype -->
+<div class="pt-5 pb-1">
+<h1 class="text-[15px] font-normal tracking-tight text-neutral-900 lowercase pl-1">contact files</h1>
+</div>
+</header>
+<!-- END: Top Status & Dynamic Island Area -->
+<!-- BEGIN: Main File Tab Organizer View -->
+<main class="relative flex-1 w-full overflow-y-auto no-scrollbar pt-6 pb-20 px-3.5 touch-pan-y" data-purpose="files-scroll-container">
+<!-- Interactive drag touch circle simulator -->
+<div class="absolute pointer-events-none z-50 w-11 h-11 rounded-full bg-white/70 shadow-lg backdrop-blur-sm -translate-x-1/2 -translate-y-1/2 border border-white/40 hidden" id="touch-indicator" style="left: 145.266px; top: 49.9688px;"></div>
+<!-- BEGIN: Stack of Physical File Cards -->
+<div class="relative flex flex-col space-y-[-18px] pb-12 transition-all" id="cards-stack"><div class="relative w-full aspect-[352/232] select-none transition-transform duration-200 cursor-pointer" id="folder-wrapper" data-purpose="contact-card" data-index="0"><div class="absolute inset-0 z-10" id="folder-back" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.08));"><svg class="w-full h-full block" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="backGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#dedfd6"></stop><stop offset="100%" stop-color="#c8cac1"></stop></linearGradient></defs><path d="M16,231.5A15.51,15.51,0,0,1,.5,216V16A15.51,15.51,0,0,1,16,.5H154.79a15.39,15.39,0,0,1,11,4.54L187,26.25a14.4,14.4,0,0,0,10.25,4.25H336A15.51,15.51,0,0,1,351.5,46V216A15.51,15.51,0,0,1,336,231.5Z" fill="url(#backGrad)" stroke="rgba(0,0,0,0.12)" stroke-width="1"></path><path d="M16,1.5 H154.79 a14.39,14.39,0,0,1,10.2,4.2 L186.2,25.3" stroke="rgba(255,255,255,0.7)" stroke-width="1" fill="none"></path></svg><span class="absolute top-[7px] left-[18px] text-[13.5px] font-medium tracking-tight text-neutral-900 pointer-events-none select-none">Alex m.</span></div><div class="absolute inset-0 z-20 pointer-events-none" id="folder-front" style="filter: drop-shadow(0 -2px 4px rgba(0,0,0,0.03)) drop-shadow(0 8px 16px rgba(0,0,0,0.12));"><svg class="w-full h-full block" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="frontGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#d5d7ce"></stop><stop offset="100%" stop-color="#c2c5bc"></stop></linearGradient></defs><path d="M16,231.5A15.51,15.51,0,0,1,.5,216V76A15.51,15.51,0,0,1,16,60.5H154.79A14.4,14.4,0,0,0,165,56.25L186.25,35a15.39,15.39,0,0,1,11-4.54H336A15.51,15.51,0,0,1,351.5,46V216A15.51,15.51,0,0,1,336,231.5Z" fill="url(#frontGrad)" stroke="rgba(0,0,0,0.14)" stroke-width="1"></path><path d="M16,61.5 H154.79 A13.4,13.4,0,0,0,164.2,57.5 L185.5,36.2 a14.39,14.39,0,0,1,10.2-4.2 H336" stroke="rgba(255,255,255,0.6)" stroke-width="1" fill="none"></path></svg></div></div></div>
+<!-- END: Stack of Physical File Cards -->
+<!-- Soft gradient fade at bottom edge for physical filing cabinet depth -->
+<div class="pointer-events-none sticky bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#d6d8cf] to-transparent z-40"></div>
+</main>
+<!-- END: Main File Tab Organizer View -->
+<!-- BEGIN: iOS Home Bar -->
+<footer class="relative z-40 w-full flex justify-center pb-2 pt-1" data-purpose="home-bar-indicator">
+<div class="w-36 h-1 bg-neutral-900/80 rounded-full"></div>
+</footer>
+<!-- END: iOS Home Bar -->
+</div>
+<!-- END: Phone Frame Shell -->
+<!-- BEGIN: Interactive Card Elevation & Touch Ripple Script -->
+<script data-purpose="folder-interactions">
+    document.addEventListener('DOMContentLoaded', () => {
+      const cards = document.querySelectorAll('[data-purpose="contact-card"]');
+      const touchIndicator = document.getElementById('touch-indicator');
+      const container = document.querySelector('[data-purpose="files-scroll-container"]');
+
+      // Add click & touch animation
+      cards.forEach((card, idx) => {
+        let isExpanded = false;
+
+        card.addEventListener('click', (e) => {
+          isExpanded = !isExpanded;
+
+          // Reset all others slightly
+          cards.forEach((c) => {
+            if (c !== card) {
+              c.style.transform = '';
+            }
+          });
+
+          if (isExpanded) {
+            card.style.transform = 'translateY(-14px)';
+            card.style.backgroundColor = '#d3d5cb';
+          } else {
+            card.style.transform = '';
+            card.style.backgroundColor = '';
+          }
+        });
+      });
+
+      // Visual touch simulator matching the demo video dot
+      let hideTimer;
+      const showTouch = (x, y) => {
+        if (!touchIndicator) return;
+        const rect = container.getBoundingClientRect();
+        touchIndicator.style.left = `${x - rect.left}px`;
+        touchIndicator.style.top = `${y - rect.top}px`;
+        touchIndicator.classList.remove('hidden');
+
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+          touchIndicator.classList.add('hidden');
+        }, 600);
+      };
+
+      container.addEventListener('pointerdown', (e) => {
+        showTouch(e.clientX, e.clientY);
+      });
+
+      container.addEventListener('pointermove', (e) => {
+        if (e.buttons === 1) {
+          showTouch(e.clientX, e.clientY);
+        }
+      });
+    });
+  </script>
+<!-- END: Interactive Card Elevation & Touch Ripple Script -->
+
+
+
+
+</body></html>
