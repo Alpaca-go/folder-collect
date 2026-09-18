@@ -18,6 +18,8 @@ interface ElasticDragState {
   focusIndex: number | null
   startScrollTop: number
   dragMoved: boolean
+  scrollOnly: boolean
+  captured: boolean
 }
 
 interface UseElasticFolderStackOptions {
@@ -46,15 +48,32 @@ function createInitialDragState(): ElasticDragState {
     focusIndex: null,
     startScrollTop: 0,
     dragMoved: false,
+    scrollOnly: false,
+    captured: false,
   }
 }
 
-function resolveFocusIndex(event: React.PointerEvent<HTMLElement>): number | null {
-  const folderEl = (event.target as HTMLElement).closest<HTMLElement>('[data-folder-index]')
-  if (!folderEl) return null
+type DragTarget =
+  | { kind: 'elastic'; focusIndex: number }
+  | { kind: 'scroll' }
 
-  const focusIndex = Number(folderEl.dataset.folderIndex)
-  return Number.isFinite(focusIndex) ? focusIndex : null
+function resolveDragTarget(event: React.PointerEvent<HTMLElement>): DragTarget | null {
+  const target = event.target as HTMLElement
+
+  const folderEl = target.closest<HTMLElement>('[data-folder-index]')
+  if (folderEl) {
+    const focusIndex = Number(folderEl.dataset.folderIndex)
+    return Number.isFinite(focusIndex) ? { kind: 'elastic', focusIndex } : null
+  }
+
+  if (
+    target.closest('[data-purpose="title-slot"]') ||
+    target.closest('#cards-stack')
+  ) {
+    return { kind: 'scroll' }
+  }
+
+  return null
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -81,6 +100,7 @@ export function useElasticFolderStack({
     velocityY: number
     focusIndex: number
     startScrollTop: number
+    scrollOnly: boolean
   } | null>(null)
 
   const getStackElement = useCallback(() => {
@@ -152,14 +172,24 @@ export function useElasticFolderStack({
     const container = containerRef.current
     if (!pending || !container || !dragRef.current.active) return
 
-    const globalScrollDelta = pending.deltaY * ELASTIC_STACK.globalScrollRatio
-    container.scrollTop = pending.startScrollTop - globalScrollDelta
-    applyElasticOffsets(pending.deltaY, pending.velocityY, pending.focusIndex)
+    if (pending.scrollOnly) {
+      container.scrollTop = pending.startScrollTop - pending.deltaY
+    } else {
+      const globalScrollDelta = pending.deltaY * ELASTIC_STACK.globalScrollRatio
+      container.scrollTop = pending.startScrollTop - globalScrollDelta
+      applyElasticOffsets(pending.deltaY, pending.velocityY, pending.focusIndex)
+    }
   }, [applyElasticOffsets, containerRef])
 
   const scheduleMove = useCallback(
-    (deltaY: number, velocityY: number, focusIndex: number, startScrollTop: number) => {
-      pendingMoveRef.current = { deltaY, velocityY, focusIndex, startScrollTop }
+    (
+      deltaY: number,
+      velocityY: number,
+      focusIndex: number,
+      startScrollTop: number,
+      scrollOnly: boolean,
+    ) => {
+      pendingMoveRef.current = { deltaY, velocityY, focusIndex, startScrollTop, scrollOnly }
 
       if (frameRef.current !== null) return
 
@@ -217,8 +247,8 @@ export function useElasticFolderStack({
       if (!enabled) return
       if (e.button !== 0) return
 
-      const focusIndex = resolveFocusIndex(e)
-      if (focusIndex === null) return
+      const dragTarget = resolveDragTarget(e)
+      if (!dragTarget) return
 
       stopAnimations()
       resetOffsets()
@@ -232,12 +262,12 @@ export function useElasticFolderStack({
         lastTime: now,
         deltaY: 0,
         velocityY: 0,
-        focusIndex,
+        focusIndex: dragTarget.kind === 'elastic' ? dragTarget.focusIndex : null,
         startScrollTop: containerRef.current?.scrollTop ?? 0,
         dragMoved: false,
+        scrollOnly: dragTarget.kind === 'scroll',
+        captured: false,
       }
-
-      e.currentTarget.setPointerCapture(e.pointerId)
     },
     [containerRef, enabled, resetOffsets, stopAnimations],
   )
@@ -246,7 +276,7 @@ export function useElasticFolderStack({
     (e: React.PointerEvent<HTMLElement>) => {
       const drag = dragRef.current
       if (!drag.active || drag.pointerId !== e.pointerId) return
-      if (drag.focusIndex === null) return
+      if (!drag.scrollOnly && drag.focusIndex === null) return
 
       const deltaY = e.clientY - drag.startY
       const now = performance.now()
@@ -263,9 +293,20 @@ export function useElasticFolderStack({
 
       if (Math.abs(deltaY) <= ELASTIC_STACK.dragThreshold) return
 
+      if (!drag.captured) {
+        e.currentTarget.setPointerCapture(e.pointerId)
+        drag.captured = true
+      }
+
       drag.dragMoved = true
-      setDraggingVisual(true)
-      scheduleMove(deltaY, drag.velocityY, drag.focusIndex, drag.startScrollTop)
+      if (!drag.scrollOnly) setDraggingVisual(true)
+      scheduleMove(
+        deltaY,
+        drag.velocityY,
+        drag.focusIndex ?? 0,
+        drag.startScrollTop,
+        drag.scrollOnly,
+      )
     },
     [scheduleMove, setDraggingVisual],
   )
@@ -275,7 +316,7 @@ export function useElasticFolderStack({
       const drag = dragRef.current
       if (!drag.active || drag.pointerId !== e.pointerId) return
 
-      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      if (drag.captured && e.currentTarget.hasPointerCapture(e.pointerId)) {
         e.currentTarget.releasePointerCapture(e.pointerId)
       }
 
