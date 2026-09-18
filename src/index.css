@@ -10,7 +10,7 @@
 }
 
 body {
-  background-color: #0c0d0e;
+  background-color: #d6d8cf;
   margin: 0;
   padding: 0;
   min-height: 100vh;
@@ -19,17 +19,11 @@ body {
 
 #root {
   width: 100%;
+  height: 100vh;
   min-height: 100vh;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
   padding: 0;
-}
-
-@media (min-width: 640px) {
-  #root {
-    padding: 1rem;
-  }
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -44,4 +38,26 @@ body {
 [data-purpose='files-scroll-container'] {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
+}
+
+.elastic-folder-wrapper {
+  transform: translate3d(0, 0, 0);
+}
+
+#cards-stack.is-elastic-dragging .elastic-folder-wrapper {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+#cards-stack.is-elastic-dragging [data-purpose='contact-card'] {
+  isolation: isolate;
+}
+
+.folder-stack {
+  margin-bottom: calc(-170 / 352 * 100%);
+}
+
+.folder-stack > .elastic-folder-wrapper + .elastic-folder-wrapper {
+  margin-top: calc(-160 / 352 * 100%);
 }

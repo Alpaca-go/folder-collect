@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { contacts } from '../data/contacts'
-import FolderCard, { type FolderMode } from './FolderCard'
+import { type FolderMode } from './FolderCard'
+import StackFolderItem from './StackFolderItem'
+import { useElasticFolderStack } from '../hooks/useElasticFolderStack'
+import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
 
-const DRAG_THRESHOLD = 6
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
 const RETURN_DURATION_MS = 560
 const REVEAL_OVERLAP_MS = 200
-const REVEAL_DURATION_MS = 400
+const REVEAL_DURATION_MS = 420
+const REVEAL_STAGGER_MS = 52
 
 type ClosePhase = 'folding' | 'returning' | 'revealing' | null
 
@@ -16,8 +19,21 @@ export default function ContactList() {
   const [centerOffsetY, setCenterOffsetY] = useState(0)
   const [closePhase, setClosePhase] = useState<ClosePhase>(null)
   const scrollRef = useRef<HTMLElement>(null)
-  const dragRef = useRef({ active: false, startY: 0, startScrollTop: 0 })
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  const elasticEnabled = !activeId && !closePhase
+
+  const {
+    elasticOffsets,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    suppressNextClick,
+  } = useElasticFolderStack({
+    containerRef: scrollRef,
+    itemCount: contacts.length,
+    enabled: elasticEnabled,
+  })
 
   const clearCloseTimers = () => {
     closeTimersRef.current.forEach(clearTimeout)
@@ -28,6 +44,11 @@ export default function ContactList() {
 
   const handleClose = () => {
     if (!activeId || closePhase) return
+
+    const activeIndex = contacts.findIndex((contact) => contact.id === activeId)
+    const maxRevealSteps = activeIndex >= 0 ? getMaxRevealSteps(activeIndex, contacts.length) : 0
+    const totalRevealMs = REVEAL_DURATION_MS + maxRevealSteps * REVEAL_STAGGER_MS
+    const revealStartMs = FOLD_DURATION_MS - RETURN_OVERLAP_MS + RETURN_DURATION_MS - REVEAL_OVERLAP_MS
 
     setClosePhase('folding')
 
@@ -41,14 +62,14 @@ export default function ContactList() {
       window.setTimeout(() => {
         setCenterOffsetY(0)
         setClosePhase('revealing')
-      }, FOLD_DURATION_MS - RETURN_OVERLAP_MS + RETURN_DURATION_MS - REVEAL_OVERLAP_MS),
+      }, revealStartMs),
     )
 
     closeTimersRef.current.push(
       window.setTimeout(() => {
         setActiveId(null)
         setClosePhase(null)
-      }, FOLD_DURATION_MS - RETURN_OVERLAP_MS + RETURN_DURATION_MS - REVEAL_OVERLAP_MS + REVEAL_DURATION_MS),
+      }, revealStartMs + totalRevealMs),
     )
   }
 
@@ -67,31 +88,6 @@ export default function ContactList() {
     setActiveId(id)
   }
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLElement>) => {
-    if (activeId) return
-    if (e.pointerType !== 'mouse' || e.button !== 0) return
-    if ((e.target as HTMLElement).closest('button[aria-label^="Open"]')) return
-
-    dragRef.current = {
-      active: true,
-      startY: e.clientY,
-      startScrollTop: scrollRef.current?.scrollTop ?? 0,
-    }
-  }
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    if (!dragRef.current.active || !scrollRef.current) return
-
-    const deltaY = e.clientY - dragRef.current.startY
-    if (Math.abs(deltaY) <= DRAG_THRESHOLD) return
-
-    scrollRef.current.scrollTop = dragRef.current.startScrollTop - deltaY
-  }
-
-  const handlePointerUp = () => {
-    dragRef.current.active = false
-  }
-
   const getMode = (id: string): FolderMode => {
     if (!activeId) return 'default'
 
@@ -102,43 +98,62 @@ export default function ContactList() {
       return 'active'
     }
 
-    if (closePhase === 'revealing') return 'default'
+    if (closePhase === 'revealing') return 'revealing'
     return 'inactive'
   }
 
+  const activeIndex = activeId ? contacts.findIndex((contact) => contact.id === activeId) : -1
   const isOverlayOpen = Boolean(activeId)
 
   return (
     <div className="relative flex-1 min-h-0">
       <main
         ref={scrollRef}
-        className={`relative h-full w-full overflow-x-hidden no-scrollbar pt-8 pb-20 px-3.5 touch-pan-y overscroll-contain ${
-          isOverlayOpen ? 'overflow-hidden' : 'overflow-y-auto'
+        className={`relative h-full w-full no-scrollbar pb-8 px-4 overscroll-contain ${
+          isOverlayOpen ? 'overflow-y-hidden touch-pan-y' : 'overflow-y-auto touch-none'
         }`}
         data-purpose="files-scroll-container"
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
+        <section
+          className="relative shrink-0 min-h-[58%] pt-8 pb-4 select-none"
+          data-purpose="title-slot"
+        >
+          <h1 className="text-[15px] font-normal tracking-tight text-neutral-900 lowercase pl-1">
+            contact files
+          </h1>
+        </section>
+
         <div
-          className={`relative flex flex-col w-full space-y-[-160px] pt-2 -mb-[170px] ${
+          className={`relative flex flex-col w-full folder-stack ${
             isOverlayOpen ? 'pointer-events-none' : ''
           }`}
           id="cards-stack"
         >
-          {contacts.map((contact, index) => (
-            <FolderCard
-              key={contact.id}
-              name={contact.name}
-              index={index}
-              isLast={index === contacts.length - 1}
-              mode={getMode(contact.id)}
-              centerOffsetY={activeId === contact.id ? centerOffsetY : 0}
-              onActivate={(el) => handleActivate(contact.id, el)}
-            />
-          ))}
+          {contacts.map((contact, index) => {
+            const revealStep =
+              closePhase === 'revealing' && activeIndex >= 0
+                ? getRevealStep(index, activeIndex)
+                : -1
+
+            return (
+              <StackFolderItem
+                key={contact.id}
+                index={index}
+                name={contact.name}
+                isLast={index === contacts.length - 1}
+                mode={getMode(contact.id)}
+                centerOffsetY={activeId === contact.id ? centerOffsetY : 0}
+                revealDelay={revealStep >= 0 ? revealStep * REVEAL_STAGGER_MS : 0}
+                elasticOffset={elasticOffsets[index]}
+                shouldSuppressActivate={suppressNextClick}
+                onActivate={(el) => handleActivate(contact.id, el)}
+              />
+            )
+          })}
         </div>
       </main>
 
@@ -150,11 +165,6 @@ export default function ContactList() {
           onClick={closePhase ? undefined : handleClose}
         />
       )}
-
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-40 h-20 bg-gradient-to-b from-appBg via-appBg/85 to-transparent"
-        aria-hidden="true"
-      />
     </div>
   )
 }
