@@ -7,6 +7,7 @@ import {
   folderWidthRatio,
 } from '../config/folderDesign'
 import FolderInnerCards from './FolderInnerCards'
+import { stackZIndexForIndex } from '../utils/folderMorph'
 
 const FOLDER_ROTATE_X = -40
 const FOLDER_PERSPECTIVE = 1200
@@ -66,6 +67,7 @@ export default function FolderCard({
       className="relative w-full shrink-0 aspect-[352/232] select-none [container-type:inline-size]"
       data-purpose="contact-card"
       data-index={index}
+      initial={false}
       animate={{
         y: isCentered ? centerOffsetY : mode === 'inactive' ? INACTIVE_DIVE_Y : 0,
         opacity: mode === 'inactive' ? 0 : 1,
@@ -99,7 +101,7 @@ export default function FolderCard({
         },
       }}
       style={{
-        zIndex: isCentered || mode === 'returning' ? 100 : index + 1,
+        zIndex: isCentered || mode === 'returning' ? 100 : stackZIndexForIndex(index),
         transformPerspective: FOLDER_PERSPECTIVE,
         transformOrigin: '50% 0%',
         pointerEvents:

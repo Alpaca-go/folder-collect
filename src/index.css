@@ -61,3 +61,17 @@ body {
 .folder-stack > .elastic-folder-wrapper + .elastic-folder-wrapper {
   margin-top: calc(-160 / 352 * 100%);
 }
+
+.elastic-folder-wrapper.folder-tail-enter {
+  animation: folder-tail-enter 260ms ease-out both;
+}
+
+@keyframes folder-tail-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

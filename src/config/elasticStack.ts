@@ -8,7 +8,7 @@ export const ELASTIC_STACK = {
 
   maxElasticOffset: 72,
 
-  globalScrollRatio: 0.7,
+  globalScrollRatio: 1,
 
   velocitySmoothing: 0.25,
 

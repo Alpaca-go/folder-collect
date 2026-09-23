@@ -4,6 +4,7 @@ import { type FolderMode } from './FolderCard'
 import StackFolderItem from './StackFolderItem'
 import { useElasticFolderStack } from '../hooks/useElasticFolderStack'
 import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
+import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
 
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
@@ -11,17 +12,38 @@ const RETURN_DURATION_MS = 560
 const REVEAL_OVERLAP_MS = 200
 const REVEAL_DURATION_MS = 420
 const REVEAL_STAGGER_MS = 52
+const TAIL_ENTER_BATCH = 2
 
 type ClosePhase = 'folding' | 'returning' | 'revealing' | null
 
-export default function ContactList() {
+interface ContactListProps {
+  onBack: () => void
+  stackHidden?: boolean
+  contentHidden?: boolean
+  measureOnly?: boolean
+  morphCoverActive?: boolean
+  listRevealCount?: number | null
+  listRevealActive?: boolean
+  compactHeader?: boolean
+}
+
+export default function ContactList({
+  onBack,
+  stackHidden = false,
+  contentHidden = false,
+  measureOnly = false,
+  morphCoverActive = false,
+  listRevealCount = null,
+  listRevealActive = false,
+  compactHeader = false,
+}: ContactListProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [centerOffsetY, setCenterOffsetY] = useState(0)
   const [closePhase, setClosePhase] = useState<ClosePhase>(null)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const elasticEnabled = !activeId && !closePhase
+  const elasticEnabled = !activeId && !closePhase && !listRevealActive
 
   const {
     elasticOffsets,
@@ -105,12 +127,52 @@ export default function ContactList() {
   const activeIndex = activeId ? contacts.findIndex((contact) => contact.id === activeId) : -1
   const isOverlayOpen = Boolean(activeId)
 
+  const hideStack = stackHidden || measureOnly
+  const hideContent = contentHidden || measureOnly
+  const useNativeScroll = !isOverlayOpen && !elasticEnabled
+
+  /** Keep every folder in layout; only opacity changes to avoid stack jumping. */
+  const getFolderPresentation = (index: number) => {
+    if (measureOnly || hideStack) {
+      return { hidden: true, entering: false }
+    }
+
+    if (morphCoverActive && index < MORPH_FOLDER_COUNT) {
+      return { hidden: true, entering: false }
+    }
+
+    if (listRevealActive && listRevealCount !== null) {
+      if (index < MORPH_FOLDER_COUNT && morphCoverActive) {
+        return { hidden: true, entering: false }
+      }
+
+      if (index < MORPH_FOLDER_COUNT) {
+        return { hidden: false, entering: false }
+      }
+
+      if (index < listRevealCount) {
+        return {
+          hidden: false,
+          entering: index >= MORPH_FOLDER_COUNT && index >= listRevealCount - TAIL_ENTER_BATCH,
+        }
+      }
+
+      return { hidden: true, entering: false }
+    }
+
+    return { hidden: false, entering: false }
+  }
+
   return (
-    <div className="relative flex-1 min-h-0">
+    <div className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}`}>
       <main
         ref={scrollRef}
         className={`relative h-full w-full no-scrollbar pb-8 px-4 overscroll-contain ${
-          isOverlayOpen ? 'overflow-y-hidden touch-pan-y' : 'overflow-y-auto touch-none'
+          isOverlayOpen
+            ? 'overflow-y-hidden touch-pan-y'
+            : useNativeScroll
+              ? 'overflow-y-auto touch-pan-y'
+              : 'overflow-y-auto touch-none'
         }`}
         data-purpose="files-scroll-container"
         onPointerDown={onPointerDown}
@@ -119,9 +181,20 @@ export default function ContactList() {
         onPointerCancel={onPointerUp}
       >
         <section
-          className="relative shrink-0 min-h-[58%] pt-8 pb-4 select-none"
+          className={`relative shrink-0 pt-8 pb-4 select-none${
+            compactHeader ? '' : ' min-h-[58%]'
+          }${hideContent ? ' invisible' : ''}`}
           data-purpose="title-slot"
+          aria-hidden={hideContent}
         >
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isOverlayOpen}
+            className="mb-3 border-0 bg-transparent p-0 text-[11px] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default"
+          >
+            ← back to cabinet
+          </button>
           <h1 className="text-[15px] font-normal tracking-tight text-neutral-900 lowercase pl-1">
             contact files
           </h1>
@@ -130,14 +203,17 @@ export default function ContactList() {
         <div
           className={`relative flex flex-col w-full folder-stack ${
             isOverlayOpen ? 'pointer-events-none' : ''
-          }`}
+          }${hideStack ? ' invisible' : ''}`}
           id="cards-stack"
+          aria-hidden={hideStack}
         >
           {contacts.map((contact, index) => {
             const revealStep =
               closePhase === 'revealing' && activeIndex >= 0
                 ? getRevealStep(index, activeIndex)
                 : -1
+
+            const { hidden: folderHidden, entering: folderEntering } = getFolderPresentation(index)
 
             return (
               <StackFolderItem
@@ -151,6 +227,8 @@ export default function ContactList() {
                 elasticOffset={elasticOffsets[index]}
                 shouldSuppressActivate={suppressNextClick}
                 onActivate={(el) => handleActivate(contact.id, el)}
+                itemHidden={folderHidden}
+                itemEntering={folderEntering}
               />
             )
           })}

@@ -68,7 +68,8 @@ function resolveDragTarget(event: React.PointerEvent<HTMLElement>): DragTarget |
 
   if (
     target.closest('[data-purpose="title-slot"]') ||
-    target.closest('#cards-stack')
+    target.closest('#cards-stack') ||
+    target.closest('[data-purpose="files-scroll-container"]')
   ) {
     return { kind: 'scroll' }
   }
@@ -293,6 +294,17 @@ export function useElasticFolderStack({
 
       if (Math.abs(deltaY) <= ELASTIC_STACK.dragThreshold) return
 
+      if (!drag.scrollOnly) {
+        const container = containerRef.current
+        drag.scrollOnly = true
+        drag.startScrollTop = container?.scrollTop ?? drag.startScrollTop
+        drag.startY = e.clientY
+        drag.deltaY = 0
+        drag.focusIndex = null
+        resetOffsets()
+        setDraggingVisual(false)
+      }
+
       if (!drag.captured) {
         e.currentTarget.setPointerCapture(e.pointerId)
         drag.captured = true
@@ -308,7 +320,7 @@ export function useElasticFolderStack({
         drag.scrollOnly,
       )
     },
-    [scheduleMove, setDraggingVisual],
+    [containerRef, resetOffsets, scheduleMove, setDraggingVisual],
   )
 
   const endDrag = useCallback(

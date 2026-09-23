@@ -12,6 +12,8 @@ interface StackFolderItemProps {
   elasticOffset: MotionValue<number>
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
+  itemHidden?: boolean
+  itemEntering?: boolean
 }
 
 export default function StackFolderItem({
@@ -24,6 +26,8 @@ export default function StackFolderItem({
   elasticOffset,
   shouldSuppressActivate,
   onActivate,
+  itemHidden = false,
+  itemEntering = false,
 }: StackFolderItemProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -34,7 +38,13 @@ export default function StackFolderItem({
   })
 
   return (
-    <div ref={wrapperRef} data-folder-index={index} className="elastic-folder-wrapper">
+    <div
+      ref={wrapperRef}
+      data-folder-index={index}
+      className={`elastic-folder-wrapper${itemHidden ? ' opacity-0 pointer-events-none' : ''}${
+        itemEntering ? ' folder-tail-enter' : ''
+      }`}
+    >
       <FolderCard
         name={name}
         index={index}

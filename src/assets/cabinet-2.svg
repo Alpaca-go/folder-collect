@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.3.1, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 460 481" style="enable-background:new 0 0 460 481;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#A3E700;}
+	.st1{fill:#FFFFFF;}
+	.st2{fill:#C9C9C9;}
+	.st3{fill:#FFB52E;}
+	.st4{fill:#FFFFFF;stroke:#000000;stroke-miterlimit:10;}
+	.st5{font-family:'HarmonyOS_Sans_SC';}
+	.st6{font-size:12px;}
+	.st7{fill:#FFA345;}
+</style>
+<g id="cabinet-inner">
+	<polygon points="404.9,463.5 55.1,463.5 1.38,276 458.62,276 	"/>
+</g>
+<g id="cabinet-thickness">
+	<path class="st0" d="M1.38,276L55.1,463.5h349.8L458.62,276H1.38z M395.1,450.5H64.9L18.63,289h422.74L395.1,450.5z"/>
+</g>
+<g id="drawer-bottom">
+	<polygon class="st1" points="76.27,13 57.75,276 402.25,276 383.73,13 	"/>
+</g>
+<g id="drawer-side">
+	<g>
+		<polygon class="st2" points="35.12,13 11.64,276 57.75,276 76.27,13 		"/>
+		<polygon class="st2" points="424.88,13 383.73,13 402.25,276 448.36,276 		"/>
+	</g>
+</g>
+<g id="drawer-thickness">
+	<polygon class="st3" points="1.4,276 0,293.5 460,293.5 458.64,276 	"/>
+</g>
+<g id="drawer-door">
+	<polygon class="st0" points="406.28,481 53.72,481 0,293.5 460,293.5 	"/>
+	<path class="st4" d="M303.1,414.09l4.03-37.63c0.57-5.33-3.61-9.98-8.96-9.98H161.84c-5.36,0-9.54,4.65-8.96,9.98l4.03,37.63c0.49,4.58,4.36,8.06,8.96,8.06h128.26C298.74,422.14,302.6,418.67,303.1,414.09z"/>
+	<text transform="matrix(1 0 0 1 180.675 397.7065)" class="st5 st6">Kyries' secret files</text>
+	<path class="st4" d="M312.07,330.3L312.07,330.3c0.71-6.64-4.49-12.43-11.17-12.43H159.1c-6.68,0-11.88,5.79-11.17,12.43v0c0.61,5.71,5.43,10.04,11.17,10.04h141.8C306.64,340.34,311.46,336.01,312.07,330.3z"/>
+</g>
+<g id="cabinet-top">
+	<polygon class="st7" points="437.14,0 23.52,0 1.38,276 458.62,276 	"/>
+</g>
+</svg>
