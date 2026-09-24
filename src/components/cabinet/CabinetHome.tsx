@@ -18,7 +18,9 @@ export default function CabinetHome({
   onCabinetExitComplete,
 }: CabinetHomeProps) {
   return (
-    <div className="relative flex h-full min-h-0 w-full items-center justify-center bg-appBg">
+    <div
+      className="relative flex h-full min-h-0 w-full flex-1 items-center justify-center bg-appBg pb-[var(--app-pad-bottom)] pt-[var(--app-pad-top)]"
+    >
       <CabinetBox
         onOpenFiles={onOpenFiles}
         onFolderClick={onFolderClick}

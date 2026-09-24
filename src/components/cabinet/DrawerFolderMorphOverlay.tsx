@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import DrawerMiniFolder from './DrawerMiniFolder'
 import {
-  FOLDER_CENTER_GATHER_SIZE_MULT,
   FOLDER_CENTER_HOLD_AFTER_GATHER_MS,
   type FolderLayoutSnapshot,
   areMorphFoldersSettled,
+  computeResponsiveCenterGatherSizeMult,
   computeViewportGatherShift,
   lerpFolderGatherShift,
   lerpFolderLayout,
@@ -23,7 +23,6 @@ interface DrawerFolderMorphOverlayProps {
   names: string[]
   /** Overlay session active — smooth center gather, hold, then stack morph. */
   sessionActive: boolean
-  pageUnderlay?: boolean
   onComplete: () => void
 }
 
@@ -31,7 +30,6 @@ export default function DrawerFolderMorphOverlay({
   fromTargets,
   names,
   sessionActive,
-  pageUnderlay = false,
   onComplete,
 }: DrawerFolderMorphOverlayProps) {
   const [toTargets, setToTargets] = useState<FolderLayoutSnapshot[] | null>(null)
@@ -45,26 +43,28 @@ export default function DrawerFolderMorphOverlay({
   completeRef.current = onComplete
   toTargetsRef.current = toTargets
 
-  if (sessionActive) {
+  useEffect(() => {
     fromSnapshotRef.current = fromTargets
-  }
+  }, [fromTargets])
 
   const gatherFrom = fromSnapshotRef.current
   const gatherShift = useMemo(
     () => computeViewportGatherShift(gatherFrom),
     [gatherFrom],
   )
+  const gatherSizeMult = useMemo(
+    () => computeResponsiveCenterGatherSizeMult(gatherFrom),
+    [gatherFrom],
+  )
   const centerSnapshots = useMemo(
     () =>
       translateFolderTargets(gatherFrom, gatherShift.dx, gatherShift.dy).map((target) =>
-        scaleFolderSnapshotFromCenter(target, FOLDER_CENTER_GATHER_SIZE_MULT),
+        scaleFolderSnapshotFromCenter(target, gatherSizeMult),
       ),
-    [gatherFrom, gatherShift.dx, gatherShift.dy],
+    [gatherFrom, gatherShift.dx, gatherShift.dy, gatherSizeMult],
   )
 
   useLayoutEffect(() => {
-    if (!sessionActive) return
-
     let cancelled = false
     let attempts = 0
 
@@ -86,7 +86,7 @@ export default function DrawerFolderMorphOverlay({
     return () => {
       cancelled = true
     }
-  }, [fromTargets.length, sessionActive])
+  }, [fromTargets.length])
 
   useEffect(() => {
     if (!sessionActive) return
@@ -169,9 +169,7 @@ export default function DrawerFolderMorphOverlay({
 
   return (
     <div
-      className={`drawer-folder-morph-overlay${
-        pageUnderlay ? ' drawer-folder-morph-overlay--page-underlay' : ''
-      }`}
+      className="drawer-folder-morph-overlay"
       aria-hidden="true"
     >
       {gatherFrom.map((from, index) => {
@@ -182,7 +180,13 @@ export default function DrawerFolderMorphOverlay({
           : 0
         const layout = stackMorphActive
           ? lerpFolderLayout(center, to, stackLocalT)
-          : lerpFolderGatherShift(from, gatherShift.dx, gatherShift.dy, centerProgress)
+          : lerpFolderGatherShift(
+              from,
+              gatherShift.dx,
+              gatherShift.dy,
+              centerProgress,
+              gatherSizeMult,
+            )
 
         return (
           <div

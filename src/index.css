@@ -1,3 +1,5 @@
+@import './styles/responsive.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,13 +16,18 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   font-family: 'Inter', -apple-system, sans-serif;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 #root {
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -55,6 +62,8 @@ body {
 }
 
 .folder-stack {
+  width: 100%;
+  max-width: 100%;
   margin-bottom: calc(-170 / 352 * 100%);
 }
 

@@ -1,13 +1,19 @@
 import { animate } from 'framer-motion'
 
-export const CABINET_EXIT_DURATION_MS = 420
+/** Keep in sync with `--cabinet-exit-duration` in cabinet.css */
+export const CABINET_EXIT_DURATION_MS = 720
 /** Move drawer pile to viewport center as one group. */
 export const FOLDER_CENTER_GATHER_DURATION_MS = 400
 /**
- * Size multiplier on morph clone width/height at viewport center.
- * Applied via layout box — not CSS transform scale — so SVG/text stay sharp.
+ * Max size multiplier at viewport center on wide screens.
+ * Actual mult is clamped by {@link computeResponsiveCenterGatherSizeMult}.
  */
-export const FOLDER_CENTER_GATHER_SIZE_MULT = 1.3
+export const FOLDER_CENTER_GATHER_SIZE_MULT_MAX = 1.3
+/** @deprecated Use FOLDER_CENTER_GATHER_SIZE_MULT_MAX */
+export const FOLDER_CENTER_GATHER_SIZE_MULT = FOLDER_CENTER_GATHER_SIZE_MULT_MAX
+
+const GATHER_VIEWPORT_PAD_X = 16
+const GATHER_VIEWPORT_PAD_Y = 20
 /**
  * Idle hold after gather animation has finished (not the gather duration itself).
  * Used in DrawerFolderMorphOverlay after runFolderCenterGatherProgress completes.
@@ -110,6 +116,79 @@ export function computeViewportGatherShift(targets: FolderLayoutSnapshot[]) {
   return { dx: midX - cluster.x, dy: midY - cluster.y }
 }
 
+export function folderClusterBounds(targets: FolderLayoutSnapshot[]) {
+  if (targets.length === 0) {
+    return { left: 0, top: 0, width: 0, height: 0 }
+  }
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const target of targets) {
+    minX = Math.min(minX, target.left)
+    minY = Math.min(minY, target.top)
+    maxX = Math.max(maxX, target.left + target.width)
+    maxY = Math.max(maxY, target.top + target.height)
+  }
+
+  return {
+    left: minX,
+    top: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  }
+}
+
+export function folderClusterBoundsAfterSizeMult(
+  targets: FolderLayoutSnapshot[],
+  sizeMult: number,
+) {
+  const scaled = targets.map((target) => scaleFolderSnapshotFromCenter(target, sizeMult))
+  return folderClusterBounds(scaled)
+}
+
+export function viewportGatherAvailSize() {
+  const viewport = window.visualViewport
+  const width = viewport?.width ?? window.innerWidth
+  const height = viewport?.height ?? window.innerHeight
+
+  return {
+    width: width - GATHER_VIEWPORT_PAD_X * 2,
+    height: height - GATHER_VIEWPORT_PAD_Y * 2,
+  }
+}
+
+/** Fit centered pile inside the viewport; never exceeds FOLDER_CENTER_GATHER_SIZE_MULT_MAX. */
+export function computeResponsiveCenterGatherSizeMult(
+  targets: FolderLayoutSnapshot[],
+  maxMult = FOLDER_CENTER_GATHER_SIZE_MULT_MAX,
+) {
+  if (targets.length === 0 || maxMult <= 1) return 1
+
+  const shift = computeViewportGatherShift(targets)
+  const centered = translateFolderTargets(targets, shift.dx, shift.dy)
+  const avail = viewportGatherAvailSize()
+
+  const fits = (mult: number) => {
+    const bounds = folderClusterBoundsAfterSizeMult(centered, mult)
+    return bounds.width <= avail.width && bounds.height <= avail.height
+  }
+
+  if (fits(maxMult)) return maxMult
+
+  let lo = 1
+  let hi = maxMult
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2
+    if (fits(mid)) lo = mid
+    else hi = mid
+  }
+
+  return lo
+}
+
 /** Grow layout box from its center (keeps DRAWER_MORPH_LAYOUT.scale for 3D only). */
 export function scaleFolderSnapshotFromCenter(
   snapshot: FolderLayoutSnapshot,
@@ -137,7 +216,7 @@ export function lerpFolderGatherShift(
   dx: number,
   dy: number,
   t: number,
-  sizeMult = FOLDER_CENTER_GATHER_SIZE_MULT,
+  sizeMult = FOLDER_CENTER_GATHER_SIZE_MULT_MAX,
 ) {
   const u = easeInOutQuart(t)
   const mul = lerp(1, sizeMult, u)

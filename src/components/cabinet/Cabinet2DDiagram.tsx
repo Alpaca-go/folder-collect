@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
+import { motion } from 'framer-motion'
 import {
   CABINET2_VIEW,
   CABINET_INNER,
@@ -89,16 +90,6 @@ export default function Cabinet2DDiagram({
   const drawerInteractive = doorPull >= DOOR_OPEN_THRESHOLD
   const folderClipInteractive = drawerInteractive && doorOpen && !cabinetExiting
 
-  useEffect(() => {
-    if (!cabinetExiting || foldersMorphing) return
-
-    const timer = window.setTimeout(() => {
-      onCabinetExitComplete?.()
-    }, CABINET_EXIT_DURATION_MS)
-
-    return () => window.clearTimeout(timer)
-  }, [cabinetExiting, foldersMorphing, onCabinetExitComplete])
-
   const handleDoorClick = (event: MouseEvent<SVGGElement>) => {
     if (cabinetExiting) return
     event.stopPropagation()
@@ -126,10 +117,30 @@ export default function Cabinet2DDiagram({
     }
   }
 
+  const exitEase = [0.22, 0, 0.15, 1] as const
+  const exitCompleteSentRef = useRef(false)
+
+  useEffect(() => {
+    if (!cabinetExiting) {
+      exitCompleteSentRef.current = false
+    }
+  }, [cabinetExiting])
+
   return (
-    <div
+    <motion.div
       className={`cabinet-diagram-wrap${cabinetExiting ? ' cabinet-exiting' : ''}${foldersMorphing ? ' folders-morphing' : ''}`}
       data-purpose="cabinet-diagram"
+      initial={false}
+      animate={{ opacity: cabinetExiting ? 0 : 1 }}
+      transition={{
+        duration: CABINET_EXIT_DURATION_MS / 1000,
+        ease: exitEase,
+      }}
+      onAnimationComplete={() => {
+        if (!cabinetExiting || exitCompleteSentRef.current) return
+        exitCompleteSentRef.current = true
+        onCabinetExitComplete?.()
+      }}
     >
       <svg
         className="cabinet-svg"
@@ -144,16 +155,16 @@ export default function Cabinet2DDiagram({
         </defs>
 
         <g id="cabinet-inner">
-          <polygon className="cabinet-fill-inner" points={toPoly(CABINET_INNER)} />
+          <polygon className="cabinet-part" points={toPoly(CABINET_INNER)} />
         </g>
 
         <g id="cabinet-thickness">
-          <path className="cabinet-fill-green" d={CABINET_THICKNESS_D} />
+          <path className="cabinet-part" d={CABINET_THICKNESS_D} />
         </g>
 
         <g
           id="drawer-interior-clip-wrap"
-          clipPath={cabinetExiting ? undefined : 'url(#drawer-interior-clip)'}
+          clipPath="url(#drawer-interior-clip)"
         >
           <g id="drawer-viewport" transform={`translate(0 ${doorY})`}>
             <foreignObject
@@ -180,11 +191,11 @@ export default function Cabinet2DDiagram({
                 >
                   <g id="drawer-interior" transform={`translate(0 ${DRAWER_INTERIOR_Y})`}>
                     <g id="drawer-bottom">
-                      <polygon className="cabinet-fill-white" points={toPoly(DRAWER_BOTTOM)} />
+                      <polygon className="cabinet-part" points={toPoly(DRAWER_BOTTOM)} />
                     </g>
                     <g id="drawer-side">
-                      <polygon className="cabinet-fill-side" points={toPoly(DRAWER_SIDE_LEFT)} />
-                      <polygon className="cabinet-fill-side" points={toPoly(DRAWER_SIDE_RIGHT)} />
+                      <polygon className="cabinet-part" points={toPoly(DRAWER_SIDE_LEFT)} />
+                      <polygon className="cabinet-part" points={toPoly(DRAWER_SIDE_RIGHT)} />
                     </g>
                   </g>
                 </svg>
@@ -201,7 +212,7 @@ export default function Cabinet2DDiagram({
             height={folderClip.height}
           >
             <div
-              className={`drawer-folder-clip-mask-inner${cabinetExiting ? ' drawer-folder-clip-released' : ''}`}
+              className={`drawer-folder-clip-mask-inner${cabinetExiting ? ' drawer-folder-clip-released' : ''}${drawerFoldersHidden ? ' drawer-folders-suppressed' : ''}`}
             >
               <div
                 className="drawer-folder-clip-content"
@@ -213,7 +224,7 @@ export default function Cabinet2DDiagram({
                   width={CABINET2_VIEW.w}
                   height={CABINET2_VIEW.h}
                 >
-                  {!foldersMorphing && !drawerFoldersHidden && (
+                  {!foldersMorphing && (
                     <DrawerFolderStack
                       doorPull={doorPull}
                       doorOpen={doorOpen}
@@ -239,22 +250,22 @@ export default function Cabinet2DDiagram({
           onKeyDown={handleDoorKeyDown}
         >
           <g id="drawer-thickness">
-            <polygon className="cabinet-fill-drawer-lip" points={toPoly(DRAWER_THICKNESS)} />
+            <polygon className="cabinet-part" points={toPoly(DRAWER_THICKNESS)} />
           </g>
           <g id="drawer-door">
-            <polygon className="cabinet-fill-green" points={toPoly(DRAWER_DOOR)} />
-            <path className="cabinet-handle-stroke" d={DRAWER_HANDLE_LABEL_D} />
+            <polygon className="cabinet-part" points={toPoly(DRAWER_DOOR)} />
+            <path className="cabinet-part" d={DRAWER_HANDLE_LABEL_D} />
             <text className="cabinet-label" transform="matrix(1 0 0 1 180.675 397.7065)">
               Kyries&apos; secret files
             </text>
-            <path className="cabinet-handle-stroke" d={DRAWER_HANDLE_SLOT_D} />
+            <path className="cabinet-part" d={DRAWER_HANDLE_SLOT_D} />
           </g>
         </g>
 
         <g id="cabinet-top">
-          <polygon className="cabinet-fill-orange" points={toPoly(CABINET_TOP)} />
+          <polygon className="cabinet-part" points={toPoly(CABINET_TOP)} />
         </g>
       </svg>
-    </div>
+    </motion.div>
   )
 }

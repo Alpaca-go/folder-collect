@@ -98,13 +98,13 @@ export default function App() {
     listRevealCount !== null && listRevealCount < contacts.length
 
   return (
-    <>
+    <div className="app-shell">
       {showCabinet && (
-        <>
+        <div className="app-view-layer">
           <CabinetHome
             onOpenFiles={handleOpenFiles}
             onFolderClick={handleFolderClick}
-            cabinetExiting={Boolean(folderExit)}
+            cabinetExiting={folderExit?.phase === 'cabinet-exit'}
             foldersMorphing={isMorphing}
             drawerFoldersHidden={showMorphOverlay && drawerCloneReady}
             onCabinetExitComplete={handleCabinetExitComplete}
@@ -114,11 +114,11 @@ export default function App() {
               <PhoneFrame onBack={() => {}} measureOnly />
             </div>
           )}
-        </>
+        </div>
       )}
 
       {showFilesLayer && (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="app-view-layer">
           <PhoneFrame
             onBack={handleBackToCabinet}
             morphCoverActive={isMorphing}
@@ -133,11 +133,10 @@ export default function App() {
         <DrawerFolderMorphOverlay
           fromTargets={folderExit.fromTargets}
           names={folderExit.names}
-          sessionActive={Boolean(folderExit)}
-          pageUnderlay={isMorphing}
+          sessionActive={isMorphing}
           onComplete={handleMorphComplete}
         />
       )}
-    </>
+    </div>
   )
 }

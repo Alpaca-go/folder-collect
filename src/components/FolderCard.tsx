@@ -36,6 +36,8 @@ interface FolderCardProps {
   revealDelay?: number
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
+  /** Close path: keep hidden siblings in stack slots (no inactive dive). */
+  stackSiblingCollapsed?: boolean
 }
 
 export default function FolderCard({
@@ -47,6 +49,7 @@ export default function FolderCard({
   revealDelay = 0,
   shouldSuppressActivate,
   onActivate,
+  stackSiblingCollapsed = false,
 }: FolderCardProps) {
   const uid = `folder-${index}`
   const rootRef = useRef<HTMLDivElement>(null)
@@ -69,7 +72,13 @@ export default function FolderCard({
       data-index={index}
       initial={false}
       animate={{
-        y: isCentered ? centerOffsetY : mode === 'inactive' ? INACTIVE_DIVE_Y : 0,
+        y: isCentered
+          ? centerOffsetY
+          : mode === 'inactive'
+            ? stackSiblingCollapsed
+              ? 0
+              : INACTIVE_DIVE_Y
+            : 0,
         opacity: mode === 'inactive' ? 0 : 1,
         rotateX: isCentered ? -6 : FOLDER_ROTATE_X,
         scale: isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE,
@@ -101,7 +110,8 @@ export default function FolderCard({
         },
       }}
       style={{
-        zIndex: isCentered || mode === 'returning' ? 100 : stackZIndexForIndex(index),
+        zIndex:
+          isCentered || mode === 'closing' || mode === 'returning' ? 100 : stackZIndexForIndex(index),
         transformPerspective: FOLDER_PERSPECTIVE,
         transformOrigin: '50% 0%',
         pointerEvents:

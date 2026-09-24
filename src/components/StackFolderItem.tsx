@@ -14,6 +14,7 @@ interface StackFolderItemProps {
   onActivate: (element: HTMLElement) => void
   itemHidden?: boolean
   itemEntering?: boolean
+  stackSiblingCollapsed?: boolean
 }
 
 export default function StackFolderItem({
@@ -28,6 +29,7 @@ export default function StackFolderItem({
   onActivate,
   itemHidden = false,
   itemEntering = false,
+  stackSiblingCollapsed = false,
 }: StackFolderItemProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -54,6 +56,7 @@ export default function StackFolderItem({
         revealDelay={revealDelay}
         shouldSuppressActivate={shouldSuppressActivate}
         onActivate={onActivate}
+        stackSiblingCollapsed={stackSiblingCollapsed}
       />
     </div>
   )

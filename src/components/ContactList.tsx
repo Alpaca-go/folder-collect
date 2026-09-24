@@ -9,7 +9,8 @@ import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
 const RETURN_DURATION_MS = 560
-const REVEAL_OVERLAP_MS = 200
+/** How early (ms) stack siblings may start revealing before return spring ends. */
+const REVEAL_OVERLAP_MS = 48
 const REVEAL_DURATION_MS = 420
 const REVEAL_STAGGER_MS = 52
 const TAIL_ENTER_BATCH = 2
@@ -70,19 +71,21 @@ export default function ContactList({
     const activeIndex = contacts.findIndex((contact) => contact.id === activeId)
     const maxRevealSteps = activeIndex >= 0 ? getMaxRevealSteps(activeIndex, contacts.length) : 0
     const totalRevealMs = REVEAL_DURATION_MS + maxRevealSteps * REVEAL_STAGGER_MS
-    const revealStartMs = FOLD_DURATION_MS - RETURN_OVERLAP_MS + RETURN_DURATION_MS - REVEAL_OVERLAP_MS
+    const returnStartMs = FOLD_DURATION_MS - RETURN_OVERLAP_MS
+    const returnEndMs = returnStartMs + RETURN_DURATION_MS
+    const revealStartMs = returnEndMs - REVEAL_OVERLAP_MS
 
     setClosePhase('folding')
 
     closeTimersRef.current.push(
       window.setTimeout(() => {
+        setCenterOffsetY(0)
         setClosePhase('returning')
-      }, FOLD_DURATION_MS - RETURN_OVERLAP_MS),
+      }, returnStartMs),
     )
 
     closeTimersRef.current.push(
       window.setTimeout(() => {
-        setCenterOffsetY(0)
         setClosePhase('revealing')
       }, revealStartMs),
     )
@@ -115,8 +118,7 @@ export default function ContactList({
 
     if (id === activeId) {
       if (closePhase === 'folding') return 'closing'
-      if (closePhase === 'returning') return 'returning'
-      if (closePhase === 'revealing') return 'default'
+      if (closePhase === 'returning' || closePhase === 'revealing') return 'returning'
       return 'active'
     }
 
@@ -126,6 +128,9 @@ export default function ContactList({
 
   const activeIndex = activeId ? contacts.findIndex((contact) => contact.id === activeId) : -1
   const isOverlayOpen = Boolean(activeId)
+  /** On close, siblings stay in stack slots (no dive) until reveal — avoids a second visible row. */
+  const stackSiblingsCollapsed =
+    closePhase === 'folding' || closePhase === 'returning' || closePhase === 'revealing'
 
   const hideStack = stackHidden || measureOnly
   const hideContent = contentHidden || measureOnly
@@ -167,7 +172,7 @@ export default function ContactList({
     <div className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}`}>
       <main
         ref={scrollRef}
-        className={`relative h-full w-full no-scrollbar pb-8 px-4 overscroll-contain ${
+        className={`relative h-full w-full no-scrollbar overscroll-contain pb-[var(--app-pad-bottom)] pt-[var(--app-pad-top)] ${
           isOverlayOpen
             ? 'overflow-y-hidden touch-pan-y'
             : useNativeScroll
@@ -181,8 +186,8 @@ export default function ContactList({
         onPointerCancel={onPointerUp}
       >
         <section
-          className={`relative shrink-0 pt-8 pb-4 select-none${
-            compactHeader ? '' : ' min-h-[58%]'
+          className={`app-inline-pad relative shrink-0 pb-4 pt-4 select-none${
+            compactHeader ? '' : ' min-h-[var(--title-slot-min-h)]'
           }${hideContent ? ' invisible' : ''}`}
           data-purpose="title-slot"
           aria-hidden={hideContent}
@@ -191,11 +196,11 @@ export default function ContactList({
             type="button"
             onClick={onBack}
             disabled={isOverlayOpen}
-            className="mb-3 border-0 bg-transparent p-0 text-[11px] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default"
+            className="mb-3 min-h-[44px] border-0 bg-transparent p-0 text-[clamp(11px,3.2vw,13px)] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default touch-manipulation"
           >
             ← back to cabinet
           </button>
-          <h1 className="text-[15px] font-normal tracking-tight text-neutral-900 lowercase pl-1">
+          <h1 className="text-[clamp(15px,4.5vw,18px)] font-normal tracking-tight text-neutral-900 lowercase pl-1">
             contact files
           </h1>
         </section>
@@ -229,6 +234,7 @@ export default function ContactList({
                 onActivate={(el) => handleActivate(contact.id, el)}
                 itemHidden={folderHidden}
                 itemEntering={folderEntering}
+                stackSiblingCollapsed={stackSiblingsCollapsed && contact.id !== activeId}
               />
             )
           })}
