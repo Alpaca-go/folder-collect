@@ -198,6 +198,22 @@
   background-color: transparent;
 }
 
+.drawer-folder-morph-overlay--elevated-labels .drawer-mini-folder-label {
+  visibility: hidden;
+}
+
+.drawer-folder-morph-elevated-labels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 950;
+}
+
+.drawer-folder-morph-elevated-label {
+  position: fixed;
+  margin: 0;
+}
+
 .drawer-folder-morph-clone {
   position: fixed;
   overflow: visible;

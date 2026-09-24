@@ -4,7 +4,7 @@ import CabinetHome from './components/cabinet/CabinetHome'
 import DrawerFolderMorphOverlay from './components/cabinet/DrawerFolderMorphOverlay'
 import { contacts } from './data/contacts'
 import {
-  measureDrawerFolderTargets,
+  folderLayoutsFromRects,
   MORPH_FOLDER_COUNT,
   type FolderLayoutSnapshot,
 } from './utils/folderMorph'
@@ -33,9 +33,9 @@ export default function App() {
   }, [])
 
   const handleFolderClick = useCallback(
-    (_index: number, _rects: DOMRect[], names: string[]) => {
+    (_index: number, rects: DOMRect[], names: string[]) => {
       setListRevealCount(null)
-      const fromTargets = measureDrawerFolderTargets(MORPH_FOLDER_COUNT)
+      const fromTargets = folderLayoutsFromRects(rects, MORPH_FOLDER_COUNT)
       if (fromTargets.length !== MORPH_FOLDER_COUNT) return
 
       setFolderExit({
@@ -84,6 +84,16 @@ export default function App() {
     folderExit?.phase === 'cabinet-exit' || (!inFilesView && !folderExit)
   const showFilesLayer = inFilesView || isMorphing
   const showMorphOverlay = Boolean(folderExit?.fromTargets.length)
+  const [drawerCloneReady, setDrawerCloneReady] = useState(false)
+
+  useEffect(() => {
+    if (!showMorphOverlay) {
+      setDrawerCloneReady(false)
+      return
+    }
+    const frame = requestAnimationFrame(() => setDrawerCloneReady(true))
+    return () => cancelAnimationFrame(frame)
+  }, [showMorphOverlay, folderExit?.fromTargets])
   const listRevealActive =
     listRevealCount !== null && listRevealCount < contacts.length
 
@@ -96,7 +106,7 @@ export default function App() {
             onFolderClick={handleFolderClick}
             cabinetExiting={Boolean(folderExit)}
             foldersMorphing={isMorphing}
-            drawerFoldersHidden={showMorphOverlay}
+            drawerFoldersHidden={showMorphOverlay && drawerCloneReady}
             onCabinetExitComplete={handleCabinetExitComplete}
           />
           {folderExit?.phase === 'cabinet-exit' && (

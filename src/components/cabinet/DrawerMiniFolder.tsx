@@ -1,4 +1,9 @@
-import { folderHeightRatio, folderWidthRatio, FOLDER_DESIGN } from '../../config/folderDesign'
+import {
+  folderFontSize,
+  folderHeightRatio,
+  folderWidthRatio,
+  FOLDER_DESIGN,
+} from '../../config/folderDesign'
 
 const BACK_PANEL_PATH =
   'M16,231.5A15.51,15.51,0,0,1,.5,216V16A15.51,15.51,0,0,1,16,.5H154.79a15.39,15.39,0,0,1,11,4.54L187,26.25a14.4,14.4,0,0,0,10.25,4.25H336A15.51,15.51,0,0,1,351.5,46V216A15.51,15.51,0,0,1,336,231.5Z'
@@ -16,6 +21,8 @@ interface DrawerMiniFolderProps {
   transformOriginY?: number
   liftY?: number
   isLast?: boolean
+  /** Morph overlay: skip SVG drop-shadow filters and use container-sized labels. */
+  morphOverlay?: boolean
 }
 
 export default function DrawerMiniFolder({
@@ -28,11 +35,12 @@ export default function DrawerMiniFolder({
   transformOriginY = 100,
   liftY = -10,
   isLast = false,
+  morphOverlay = false,
 }: DrawerMiniFolderProps) {
-  const labelFontSize = (width / FOLDER_DESIGN.width) * FOLDER_DESIGN.labelFontSize
+  const labelFontSizePx = Math.round((width / FOLDER_DESIGN.width) * FOLDER_DESIGN.labelFontSize)
   const uid = `drawer-folder-${index}`
-  const useStackShadow = !isLast
-  const usePanelShadow = true
+  const useStackShadow = !isLast && !morphOverlay
+  const usePanelShadow = !morphOverlay
 
   return (
     <div
@@ -81,7 +89,9 @@ export default function DrawerMiniFolder({
           style={{
             top: folderHeightRatio(FOLDER_DESIGN.labelTop),
             left: folderWidthRatio(FOLDER_DESIGN.labelLeft),
-            fontSize: `${labelFontSize}px`,
+            fontSize: morphOverlay
+              ? folderFontSize(FOLDER_DESIGN.labelFontSize)
+              : `${labelFontSizePx}px`,
           }}
         >
           {name}

@@ -2,9 +2,19 @@ import { animate } from 'framer-motion'
 
 export const CABINET_EXIT_DURATION_MS = 420
 /** Move drawer pile to viewport center as one group. */
-export const FOLDER_CENTER_GATHER_DURATION_MS = 620
-/** Hold centered pile before stack morph begins. */
-export const FOLDER_PAUSE_DURATION_MS = 480
+export const FOLDER_CENTER_GATHER_DURATION_MS = 400
+/**
+ * Size multiplier on morph clone width/height at viewport center.
+ * Applied via layout box — not CSS transform scale — so SVG/text stay sharp.
+ */
+export const FOLDER_CENTER_GATHER_SIZE_MULT = 1.3
+/**
+ * Idle hold after gather animation has finished (not the gather duration itself).
+ * Used in DrawerFolderMorphOverlay after runFolderCenterGatherProgress completes.
+ */
+export const FOLDER_CENTER_HOLD_AFTER_GATHER_MS = 48
+/** @deprecated Use FOLDER_CENTER_HOLD_AFTER_GATHER_MS */
+export const FOLDER_PAUSE_DURATION_MS = FOLDER_CENTER_HOLD_AFTER_GATHER_MS
 export const FOLDER_MORPH_DURATION_MS = 2200
 /** Delay between each folder start, as a fraction of the total morph timeline. */
 export const MORPH_FOLDER_STAGGER = 0.075
@@ -73,9 +83,75 @@ function measureElementLayoutBox(
   return {
     left: rect.left,
     top: rect.top,
-    width: element.offsetWidth,
-    height: element.offsetHeight,
+    width: rect.width,
+    height: rect.height,
     ...layout,
+  }
+}
+
+/** Layout snapshots from click-time getBoundingClientRect (matches visible drawer slots). */
+export function folderLayoutsFromRects(
+  rects: DOMRect[],
+  count: number,
+  layout: Omit<FolderLayoutSnapshot, 'left' | 'top' | 'width' | 'height'> = DRAWER_MORPH_LAYOUT,
+): FolderLayoutSnapshot[] {
+  return rects.slice(0, count).map((rect) => ({
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+    ...layout,
+  }))
+}
+
+export function computeViewportGatherShift(targets: FolderLayoutSnapshot[]) {
+  const cluster = folderClusterCenter(targets)
+  const { x: midX, y: midY } = viewportCenter()
+  return { dx: midX - cluster.x, dy: midY - cluster.y }
+}
+
+/** Grow layout box from its center (keeps DRAWER_MORPH_LAYOUT.scale for 3D only). */
+export function scaleFolderSnapshotFromCenter(
+  snapshot: FolderLayoutSnapshot,
+  sizeMult: number,
+): FolderLayoutSnapshot {
+  if (sizeMult === 1) return snapshot
+
+  const cx = snapshot.left + snapshot.width / 2
+  const cy = snapshot.top + snapshot.height / 2
+  const width = snapshot.width * sizeMult
+  const height = snapshot.height * sizeMult
+
+  return {
+    ...snapshot,
+    left: cx - width / 2,
+    top: cy - height / 2,
+    width,
+    height,
+  }
+}
+
+/** Rigid group translate toward viewport center (single dx/dy for every folder). */
+export function lerpFolderGatherShift(
+  from: FolderLayoutSnapshot,
+  dx: number,
+  dy: number,
+  t: number,
+  sizeMult = FOLDER_CENTER_GATHER_SIZE_MULT,
+) {
+  const u = easeInOutQuart(t)
+  const mul = lerp(1, sizeMult, u)
+  const cx = from.left + from.width / 2 + dx * u
+  const cy = from.top + from.height / 2 + dy * u
+  const width = from.width * mul
+  const height = from.height * mul
+
+  return {
+    ...from,
+    left: cx - width / 2,
+    top: cy - height / 2,
+    width,
+    height,
   }
 }
 
@@ -233,8 +309,8 @@ export function measureStackFolderTargets(count: number): FolderLayoutSnapshot[]
     targets.push({
       left: rect.left,
       top: rect.top,
-      width: card.offsetWidth,
-      height: card.offsetHeight,
+      width: rect.width,
+      height: rect.height,
       ...STACK_MORPH_LAYOUT,
     })
   }
@@ -254,7 +330,8 @@ export function measureStackFolderRects(count: number) {
 export function runFolderCenterGatherProgress(onUpdate: (progress: number) => void) {
   return animate(0, 1, {
     duration: FOLDER_CENTER_GATHER_DURATION_MS / 1000,
-    ease: FOLDER_MORPH_EASE,
+    // Snappier stop than stack morph — avoids a long “already centered” tail.
+    ease: [0.33, 0, 0.2, 1],
     onUpdate,
   })
 }
