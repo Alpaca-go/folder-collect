@@ -10,6 +10,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  background: transparent;
 }
 
 .cabinet-diagram-wrap {
@@ -30,6 +31,8 @@
   border: 0;
   padding: 0;
   background: transparent;
+  box-shadow: none;
+  filter: none;
 }
 
 .cabinet-diagram-wrap:focus {
@@ -37,7 +40,7 @@
 }
 
 .cabinet-diagram-wrap:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--color-text-primary);
   outline-offset: 4px;
 }
 
@@ -82,20 +85,54 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+  background: transparent;
+  filter: none;
 }
 
 .cabinet-part {
-  fill: #c9c9c9;
-  stroke: #000;
-  stroke-width: 1.5;
+  stroke: var(--color-line-medium);
+  stroke-width: 1.1;
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   paint-order: stroke fill;
 }
 
+#cabinet-top .cabinet-part {
+  fill: var(--color-cabinet-top);
+}
+
+#cabinet-thickness .cabinet-part {
+  fill: var(--color-cabinet-side);
+}
+
+#cabinet-inner .cabinet-part {
+  fill: var(--color-cabinet-inner);
+}
+
+#drawer-bottom .cabinet-part {
+  fill: var(--color-cabinet-inner);
+}
+
+#drawer-side .cabinet-part {
+  fill: var(--color-cabinet-side);
+}
+
+#drawer-thickness .cabinet-part {
+  fill: var(--color-cabinet-edge);
+}
+
+#drawer-door > polygon.cabinet-part {
+  fill: var(--color-cabinet-front);
+}
+
+.cabinet-handle {
+  fill: rgba(0, 0, 0, 0.035);
+  stroke: var(--color-line-soft);
+}
+
 .cabinet-label {
-  fill: #111;
+  fill: var(--color-text-primary);
   font-family: 'HarmonyOS Sans SC', HarmonyOS_Sans_SC, system-ui, sans-serif;
   font-size: 12px;
 }
@@ -267,7 +304,7 @@
   position: absolute;
   font-weight: 500;
   letter-spacing: -0.02em;
-  color: #171717;
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,6 +319,6 @@
 }
 
 .cabinet-door-hit:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--color-text-primary);
   outline-offset: 2px;
 }

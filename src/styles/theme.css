@@ -1,0 +1,28 @@
+:root {
+  /* App */
+  --color-app-bg: #d6d8cf;
+
+  /* Folder */
+  --color-folder-back-top: #dedfd6;
+  --color-folder-back-bottom: #c8cac1;
+
+  --color-folder-front-top: #d5d7ce;
+  --color-folder-front-bottom: #c2c5bc;
+
+  /* Cabinet */
+  --color-cabinet-top: #d5d7cf;
+  --color-cabinet-front: #c7cac0;
+  --color-cabinet-side: #bcc0b5;
+  --color-cabinet-inner: #b5b9ae;
+  --color-cabinet-edge: #c0c4b9;
+
+  /* Lines */
+  --color-line-soft: rgba(0, 0, 0, 0.12);
+  --color-line-medium: rgba(0, 0, 0, 0.18);
+
+  /* Highlight */
+  --color-highlight-soft: rgba(255, 255, 255, 0.48);
+
+  /* Text */
+  --color-text-primary: #171717;
+}

@@ -18,8 +18,8 @@ export default function MorphFolderClone({ name, index }: MorphFolderCloneProps)
         <svg className="block h-full w-full" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id={`morphBack-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#dedfd6" />
-              <stop offset="100%" stopColor="#c8cac1" />
+              <stop offset="0%" stopColor="var(--color-folder-back-top)" />
+              <stop offset="100%" stopColor="var(--color-folder-back-bottom)" />
             </linearGradient>
           </defs>
           <path
@@ -35,8 +35,8 @@ export default function MorphFolderClone({ name, index }: MorphFolderCloneProps)
         <svg className="block h-full w-full" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id={`morphFront-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#d5d7ce" />
-              <stop offset="100%" stopColor="#c2c5bc" />
+              <stop offset="0%" stopColor="var(--color-folder-front-top)" />
+              <stop offset="100%" stopColor="var(--color-folder-front-bottom)" />
             </linearGradient>
           </defs>
           <path

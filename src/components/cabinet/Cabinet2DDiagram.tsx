@@ -254,11 +254,11 @@ export default function Cabinet2DDiagram({
           </g>
           <g id="drawer-door">
             <polygon className="cabinet-part" points={toPoly(DRAWER_DOOR)} />
-            <path className="cabinet-part" d={DRAWER_HANDLE_LABEL_D} />
+            <path className="cabinet-part cabinet-handle" d={DRAWER_HANDLE_LABEL_D} />
             <text className="cabinet-label" transform="matrix(1 0 0 1 180.675 397.7065)">
               Kyries&apos; secret files
             </text>
-            <path className="cabinet-part" d={DRAWER_HANDLE_SLOT_D} />
+            <path className="cabinet-part cabinet-handle" d={DRAWER_HANDLE_SLOT_D} />
           </g>
         </g>
 
