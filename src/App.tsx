@@ -13,7 +13,6 @@ type FolderExitPhase = 'cabinet-exit' | 'morph'
 
 interface FolderExitSession {
   names: string[]
-  clickedIndex: number
   phase: FolderExitPhase
   fromTargets: FolderLayoutSnapshot[]
 }
@@ -40,7 +39,6 @@ export default function App() {
 
       setFolderExit({
         names,
-        clickedIndex: _index,
         phase: 'cabinet-exit',
         fromTargets,
       })
