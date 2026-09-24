@@ -1,7 +1,7 @@
 import { animate } from 'framer-motion'
 
 /** Keep in sync with `--cabinet-exit-duration` in cabinet.css */
-export const CABINET_EXIT_DURATION_MS = 720
+export const CABINET_EXIT_DURATION_MS = 480
 /** Move drawer pile to viewport center as one group. */
 export const FOLDER_CENTER_GATHER_DURATION_MS = 400
 /**

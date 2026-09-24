@@ -1,6 +1,6 @@
 /* Keep in sync with CABINET_EXIT_DURATION_MS in folderMorph.ts */
 :root {
-  --cabinet-exit-duration: 720ms;
+  --cabinet-exit-duration: 480ms;
 }
 
 /* ── Scene wrapper (2D orthographic) ── */
