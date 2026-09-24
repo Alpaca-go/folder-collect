@@ -43,9 +43,9 @@ export default function DrawerFolderMorphOverlay({
   completeRef.current = onComplete
   toTargetsRef.current = toTargets
 
-  useEffect(() => {
+  if (sessionActive) {
     fromSnapshotRef.current = fromTargets
-  }, [fromTargets])
+  }
 
   const gatherFrom = fromSnapshotRef.current
   const gatherShift = useMemo(
@@ -65,6 +65,8 @@ export default function DrawerFolderMorphOverlay({
   )
 
   useLayoutEffect(() => {
+    if (!sessionActive) return
+
     let cancelled = false
     let attempts = 0
 
@@ -86,7 +88,7 @@ export default function DrawerFolderMorphOverlay({
     return () => {
       cancelled = true
     }
-  }, [fromTargets.length])
+  }, [fromTargets.length, sessionActive])
 
   useEffect(() => {
     if (!sessionActive) return

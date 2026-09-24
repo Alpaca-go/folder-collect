@@ -133,7 +133,7 @@ export default function App() {
         <DrawerFolderMorphOverlay
           fromTargets={folderExit.fromTargets}
           names={folderExit.names}
-          sessionActive={isMorphing}
+          sessionActive={Boolean(folderExit)}
           onComplete={handleMorphComplete}
         />
       )}
