@@ -1,8 +1,10 @@
 import { animate } from 'framer-motion'
 
 export const CABINET_EXIT_DURATION_MS = 420
-/** Hold folders-only view before morph begins. */
-export const FOLDER_PAUSE_DURATION_MS = 780
+/** Move drawer pile to viewport center as one group. */
+export const FOLDER_CENTER_GATHER_DURATION_MS = 620
+/** Hold centered pile before stack morph begins. */
+export const FOLDER_PAUSE_DURATION_MS = 480
 export const FOLDER_MORPH_DURATION_MS = 2200
 /** Delay between each folder start, as a fraction of the total morph timeline. */
 export const MORPH_FOLDER_STAGGER = 0.075
@@ -85,6 +87,18 @@ export function morphProgressForIndex(globalProgress: number, index: number, cou
   return smoothstep(local)
 }
 
+/** True once every folder has visually landed in the stack morph phase. */
+export function areMorphFoldersSettled(
+  globalProgress: number,
+  count: number,
+  threshold = 0.96,
+) {
+  for (let index = 0; index < count; index++) {
+    if (morphProgressForIndex(globalProgress, index, count) < threshold) return false
+  }
+  return globalProgress > 0
+}
+
 /** Stack tab order: lower folders sit in front of the ones above. */
 export function stackZIndexForIndex(index: number) {
   return index + 1
@@ -104,6 +118,71 @@ export function morphFolderOpacity() {
 export function cabinetExitRevealScale(progress: number, from = 0.9) {
   const t = easeOutCubic(Math.min(1, Math.max(0, progress)))
   return lerp(from, 1, t)
+}
+
+export function folderClusterCenter(targets: FolderLayoutSnapshot[]) {
+  if (targets.length === 0) return { x: 0, y: 0 }
+
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+
+  for (const target of targets) {
+    minX = Math.min(minX, target.left)
+    minY = Math.min(minY, target.top)
+    maxX = Math.max(maxX, target.left + target.width)
+    maxY = Math.max(maxY, target.top + target.height)
+  }
+
+  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+}
+
+export function translateFolderTargets(
+  targets: FolderLayoutSnapshot[],
+  dx: number,
+  dy: number,
+): FolderLayoutSnapshot[] {
+  return targets.map((target) => ({
+    ...target,
+    left: target.left + dx,
+    top: target.top + dy,
+  }))
+}
+
+export function viewportCenter() {
+  const viewport = window.visualViewport
+  if (!viewport) {
+    return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+  }
+
+  return {
+    x: viewport.offsetLeft + viewport.width / 2,
+    y: viewport.offsetTop + viewport.height / 2,
+  }
+}
+
+/** Keep drawer-relative offsets; move the pile centroid to the viewport center. */
+export function centerFolderTargetsInViewport(targets: FolderLayoutSnapshot[]) {
+  const cluster = folderClusterCenter(targets)
+  const { x: midX, y: midY } = viewportCenter()
+  const dx = midX - cluster.x
+  const dy = midY - cluster.y
+  return translateFolderTargets(targets, dx, dy)
+}
+
+/** Center-gather: translate only — avoids transform/pivot lerps that skew the path. */
+export function lerpFolderLayoutTranslate(
+  from: FolderLayoutSnapshot,
+  to: FolderLayoutSnapshot,
+  t: number,
+) {
+  const u = easeInOutQuart(t)
+  return {
+    ...from,
+    left: lerp(from.left, to.left, u),
+    top: lerp(from.top, to.top, u),
+  }
 }
 
 export function lerpFolderLayout(from: FolderLayoutSnapshot, to: FolderLayoutSnapshot, t: number) {
@@ -143,24 +222,24 @@ export function measureDrawerFolderTargets(count: number): FolderLayoutSnapshot[
 
 export function measureStackFolderTargets(count: number): FolderLayoutSnapshot[] {
   const wrappers = document.querySelectorAll<HTMLElement>('#cards-stack .elastic-folder-wrapper')
+  const targets: FolderLayoutSnapshot[] = []
 
-  return Array.from(wrappers)
-    .slice(0, count)
-    .map((wrapper) => {
-      const card = wrapper.querySelector<HTMLElement>('[data-purpose="contact-card"]')
-      if (!card) return null
+  for (const wrapper of Array.from(wrappers).slice(0, count)) {
+    const card = wrapper.querySelector<HTMLElement>('[data-purpose="contact-card"]')
+    if (!card) continue
 
-      const rect = wrapper.getBoundingClientRect()
+    const rect = wrapper.getBoundingClientRect()
 
-      return {
-        left: rect.left,
-        top: rect.top,
-        width: card.offsetWidth,
-        height: card.offsetHeight,
-        ...STACK_MORPH_LAYOUT,
-      }
+    targets.push({
+      left: rect.left,
+      top: rect.top,
+      width: card.offsetWidth,
+      height: card.offsetHeight,
+      ...STACK_MORPH_LAYOUT,
     })
-    .filter((target): target is FolderLayoutSnapshot => target !== null)
+  }
+
+  return targets
 }
 
 export function measureStackFolderRects(count: number) {
@@ -170,6 +249,14 @@ export function measureStackFolderRects(count: number) {
     width,
     height,
   }))
+}
+
+export function runFolderCenterGatherProgress(onUpdate: (progress: number) => void) {
+  return animate(0, 1, {
+    duration: FOLDER_CENTER_GATHER_DURATION_MS / 1000,
+    ease: FOLDER_MORPH_EASE,
+    onUpdate,
+  })
 }
 
 export function runFolderMorphProgress(onUpdate: (progress: number) => void) {

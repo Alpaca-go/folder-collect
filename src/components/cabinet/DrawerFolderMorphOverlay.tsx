@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import DrawerMiniFolder from './DrawerMiniFolder'
 import {
-  CABINET_EXIT_DURATION_MS,
+  FOLDER_PAUSE_DURATION_MS,
   type FolderLayoutSnapshot,
-  cabinetExitRevealScale,
+  areMorphFoldersSettled,
+  centerFolderTargetsInViewport,
   lerpFolderLayout,
   measureStackFolderTargets,
   morphFolderOpacity,
@@ -15,7 +16,8 @@ import {
 interface DrawerFolderMorphOverlayProps {
   fromTargets: FolderLayoutSnapshot[]
   names: string[]
-  morphActive: boolean
+  /** Overlay session active — folders snap to viewport center, then stack morph. */
+  sessionActive: boolean
   pageUnderlay?: boolean
   onComplete: () => void
 }
@@ -23,17 +25,27 @@ interface DrawerFolderMorphOverlayProps {
 export default function DrawerFolderMorphOverlay({
   fromTargets,
   names,
-  morphActive,
+  sessionActive,
   pageUnderlay = false,
   onComplete,
 }: DrawerFolderMorphOverlayProps) {
   const [toTargets, setToTargets] = useState<FolderLayoutSnapshot[] | null>(null)
-  const [progress, setProgress] = useState(0)
-  const [exitProgress, setExitProgress] = useState(0)
+  const [stackMorphActive, setStackMorphActive] = useState(false)
+  const [stackProgress, setStackProgress] = useState(0)
   const completeRef = useRef(onComplete)
+  const morphDoneRef = useRef(false)
+  const toTargetsRef = useRef<FolderLayoutSnapshot[] | null>(null)
   completeRef.current = onComplete
+  toTargetsRef.current = toTargets
+
+  const centerTargets = useMemo(
+    () => centerFolderTargetsInViewport(fromTargets),
+    [fromTargets],
+  )
 
   useLayoutEffect(() => {
+    if (!sessionActive) return
+
     let cancelled = false
     let attempts = 0
 
@@ -46,7 +58,7 @@ export default function DrawerFolderMorphOverlay({
       }
 
       attempts += 1
-      if (attempts < 24) {
+      if (attempts < 60) {
         requestAnimationFrame(measure)
       }
     }
@@ -55,52 +67,70 @@ export default function DrawerFolderMorphOverlay({
     return () => {
       cancelled = true
     }
-  }, [fromTargets.length, morphActive])
+  }, [fromTargets.length, sessionActive])
 
   useEffect(() => {
-    if (morphActive) {
-      setExitProgress(1)
-      return
-    }
+    if (!sessionActive) return
 
-    let frame = 0
-    const start = performance.now()
-
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / CABINET_EXIT_DURATION_MS, 1)
-      setExitProgress(t)
-      if (t < 1) frame = requestAnimationFrame(tick)
-    }
-
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [morphActive])
-
-  useEffect(() => {
-    if (!morphActive || !toTargets) return
+    morphDoneRef.current = false
+    setStackMorphActive(false)
+    setStackProgress(0)
 
     let cancelled = false
-    let control: ReturnType<typeof runFolderMorphProgress> | null = null
-    let frame = 0
+    let stackControl: ReturnType<typeof runFolderMorphProgress> | null = null
+    let pauseTimer = 0
+    let waitFrame = 0
+    let stackScheduled = false
+    const folderCount = fromTargets.length
 
-    frame = requestAnimationFrame(() => {
-      if (cancelled) return
-      frame = requestAnimationFrame(() => {
-        if (cancelled) return
-        control = runFolderMorphProgress(setProgress)
-        control.then(() => completeRef.current())
-      })
-    })
+    const finishMorph = () => {
+      if (morphDoneRef.current) return
+      morphDoneRef.current = true
+      stackControl?.stop()
+      window.clearTimeout(pauseTimer)
+      cancelAnimationFrame(waitFrame)
+      completeRef.current()
+    }
+
+    const startStackMorph = () => {
+      if (cancelled || morphDoneRef.current || stackScheduled) return
+      stackScheduled = true
+      setStackMorphActive(true)
+
+      const waitForTargets = () => {
+        if (cancelled || morphDoneRef.current) return
+        if (!toTargetsRef.current) {
+          waitFrame = requestAnimationFrame(waitForTargets)
+          return
+        }
+
+        stackControl = runFolderMorphProgress((value) => {
+          setStackProgress(value)
+          if (areMorphFoldersSettled(value, folderCount)) {
+            finishMorph()
+          }
+        })
+        stackControl.then(() => {
+          if (!morphDoneRef.current) finishMorph()
+        })
+      }
+
+      waitForTargets()
+    }
+
+    pauseTimer = window.setTimeout(() => {
+      if (!cancelled && !morphDoneRef.current) startStackMorph()
+    }, FOLDER_PAUSE_DURATION_MS)
 
     return () => {
       cancelled = true
-      cancelAnimationFrame(frame)
-      control?.stop()
+      stackControl?.stop()
+      window.clearTimeout(pauseTimer)
+      cancelAnimationFrame(waitFrame)
     }
-  }, [morphActive, toTargets])
+  }, [sessionActive, fromTargets])
 
   const folderCount = fromTargets.length
-  const revealScale = morphActive ? 1 : cabinetExitRevealScale(exitProgress)
 
   return (
     <div
@@ -109,12 +139,15 @@ export default function DrawerFolderMorphOverlay({
       }`}
       aria-hidden="true"
     >
-      {fromTargets.map((from, index) => {
-        const to = toTargets?.[index] ?? from
-        const localT = morphActive && toTargets
-          ? morphProgressForIndex(progress, index, folderCount)
+      {fromTargets.map((_, index) => {
+        const center = centerTargets[index]
+        const to = toTargets?.[index] ?? center
+        const stackLocalT = stackMorphActive
+          ? morphProgressForIndex(stackProgress, index, folderCount)
           : 0
-        const layout = lerpFolderLayout(from, to, localT)
+        const layout = stackMorphActive
+          ? lerpFolderLayout(center, to, stackLocalT)
+          : center
 
         return (
           <div
@@ -125,10 +158,9 @@ export default function DrawerFolderMorphOverlay({
               top: layout.top,
               width: layout.width,
               height: layout.height,
-              zIndex: morphZIndexForIndex(index, folderCount, localT),
+              zIndex: morphZIndexForIndex(index, folderCount, stackLocalT),
               opacity: morphFolderOpacity(),
-              transform: `translateZ(0) scale(${revealScale})`,
-              transformOrigin: '50% 50%',
+              transform: 'translateZ(0)',
             }}
           >
             <DrawerMiniFolder
