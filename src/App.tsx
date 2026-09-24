@@ -84,7 +84,8 @@ export default function App() {
     folderExit?.phase === 'cabinet-exit' || (!inFilesView && !folderExit)
   const showFilesLayer = inFilesView || isMorphing
   const showMorphOverlay = Boolean(folderExit?.fromTargets.length)
-  const listRevealActive = listRevealCount !== null
+  const listRevealActive =
+    listRevealCount !== null && listRevealCount < contacts.length
 
   return (
     <>

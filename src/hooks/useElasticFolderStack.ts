@@ -294,17 +294,6 @@ export function useElasticFolderStack({
 
       if (Math.abs(deltaY) <= ELASTIC_STACK.dragThreshold) return
 
-      if (!drag.scrollOnly) {
-        const container = containerRef.current
-        drag.scrollOnly = true
-        drag.startScrollTop = container?.scrollTop ?? drag.startScrollTop
-        drag.startY = e.clientY
-        drag.deltaY = 0
-        drag.focusIndex = null
-        resetOffsets()
-        setDraggingVisual(false)
-      }
-
       if (!drag.captured) {
         e.currentTarget.setPointerCapture(e.pointerId)
         drag.captured = true
@@ -320,7 +309,7 @@ export function useElasticFolderStack({
         drag.scrollOnly,
       )
     },
-    [containerRef, resetOffsets, scheduleMove, setDraggingVisual],
+    [scheduleMove, setDraggingVisual],
   )
 
   const endDrag = useCallback(

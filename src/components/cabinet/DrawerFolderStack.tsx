@@ -190,6 +190,7 @@ export default function DrawerFolderStack({
                 width={slot.width}
                 rotateX={slot.rotateX}
                 scale={slot.scale}
+                isLast={index === folderCount - 1}
               />
             </div>
           </foreignObject>

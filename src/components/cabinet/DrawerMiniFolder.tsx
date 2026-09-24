@@ -15,6 +15,7 @@ interface DrawerMiniFolderProps {
   perspective?: number
   transformOriginY?: number
   liftY?: number
+  isLast?: boolean
 }
 
 export default function DrawerMiniFolder({
@@ -26,9 +27,12 @@ export default function DrawerMiniFolder({
   perspective = 500,
   transformOriginY = 100,
   liftY = -10,
+  isLast = false,
 }: DrawerMiniFolderProps) {
   const labelFontSize = (width / FOLDER_DESIGN.width) * FOLDER_DESIGN.labelFontSize
   const uid = `drawer-folder-${index}`
+  const useStackShadow = !isLast
+  const usePanelShadow = true
 
   return (
     <div
@@ -47,12 +51,29 @@ export default function DrawerMiniFolder({
               <stop offset="0%" stopColor="#dedfd6" />
               <stop offset="100%" stopColor="#c8cac1" />
             </linearGradient>
+            <filter
+              id={`drawerBackShadow-${uid}`}
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.08" />
+            </filter>
           </defs>
           <path
             d={BACK_PANEL_PATH}
             fill={`url(#drawerBack-${uid})`}
             stroke="rgba(0,0,0,0.12)"
             strokeWidth="1"
+            filter={usePanelShadow ? `url(#drawerBackShadow-${uid})` : undefined}
+          />
+          <path
+            d="M16,1.5 H154.79 a14.39,14.39,0,0,1,10.2,4.2 L186.2,25.3"
+            stroke="rgba(255,255,255,0.7)"
+            strokeWidth="1"
+            fill="none"
           />
         </svg>
         <span
@@ -73,12 +94,32 @@ export default function DrawerMiniFolder({
               <stop offset="0%" stopColor="#d5d7ce" />
               <stop offset="100%" stopColor="#c2c5bc" />
             </linearGradient>
+            <filter
+              id={`drawerFrontShadow-${uid}`}
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feDropShadow dx="0" dy="-2" stdDeviation="2" floodColor="#000000" floodOpacity="0.03" />
+              {useStackShadow && (
+                <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="#000000" floodOpacity="0.12" />
+              )}
+            </filter>
           </defs>
           <path
             d={FRONT_PANEL_PATH}
             fill={`url(#drawerFront-${uid})`}
             stroke="rgba(0,0,0,0.14)"
             strokeWidth="1"
+            filter={useStackShadow ? `url(#drawerFrontShadow-${uid})` : undefined}
+          />
+          <path
+            d="M16,61.5 H154.79 A13.4,13.4,0,0,0,164.2,57.5 L185.5,36.2 a14.39,14.39,0,0,1,10.2-4.2 H336"
+            stroke="rgba(255,255,255,0.6)"
+            strokeWidth="1"
+            fill="none"
           />
         </svg>
       </div>

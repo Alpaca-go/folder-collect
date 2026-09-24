@@ -140,6 +140,7 @@ export default function DrawerFolderMorphOverlay({
               perspective={layout.perspective}
               transformOriginY={layout.transformOriginY}
               liftY={layout.liftY}
+              isLast={index === folderCount - 1}
             />
           </div>
         )

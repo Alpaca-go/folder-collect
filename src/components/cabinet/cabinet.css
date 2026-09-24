@@ -213,6 +213,11 @@
   backface-visibility: hidden;
 }
 
+.drawer-folder-morph-clone .drawer-mini-folder-back,
+.drawer-folder-morph-clone .drawer-mini-folder-front {
+  overflow: visible;
+}
+
 .drawer-folder-morph-clone-inner {
   position: relative;
   width: 100%;
