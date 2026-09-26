@@ -9,35 +9,56 @@
   --color-folder-front-top: #d5d7ce;
   --color-folder-front-bottom: #c2c5bc;
 
-  /* Cabinet */
+  /* Cabinet (legacy flat tokens) */
   --color-cabinet-top: #d5d7cf;
   --color-cabinet-front: #c7cac0;
   --color-cabinet-side: #bcc0b5;
   --color-cabinet-inner: #b5b9ae;
   --color-cabinet-edge: #c0c4b9;
 
-  /* Cabinet gradients (very low contrast) */
-  --cabinet-grad-top-a: #d9dbd3;
-  --cabinet-grad-top-b: #d2d5cc;
+  /* Cabinet face gradients — matte sage, low contrast (ref: top brightest → front → side → recess) */
+  --cabinet-grad-top-a: #d8dad2;
+  --cabinet-grad-top-b: #e0e2da;
 
-  --cabinet-grad-front-a: #cbcfc5;
-  --cabinet-grad-front-b: #c5c8be;
+  --cabinet-grad-front-a: #c8cbc1;
+  --cabinet-grad-front-b: #c1c4b9;
 
-  --cabinet-grad-side-a: #c1c5ba;
-  --cabinet-grad-side-b: #b7bbb0;
+  --cabinet-grad-side-a: #babeb3;
+  --cabinet-grad-side-b: #aeb2a7;
 
-  --cabinet-grad-inner-a: #b9bdb2;
-  --cabinet-grad-inner-b: #b0b5a9;
+  --cabinet-grad-inner-a: #b3b7ac;
+  --cabinet-grad-inner-b: #a8aca1;
+
+  /* Handle recess: top darkest → bottom lightens toward door face */
+  --cabinet-handle-top: #9fa59a;
+  --cabinet-handle-mid: #adb2a6;
+  --cabinet-handle-bottom: #c4c7bd;
+  --cabinet-handle-rim-dark: rgba(28, 32, 26, 0.34);
+  --cabinet-handle-rim-light: rgba(255, 255, 255, 0.42);
 
   /* Lines */
   --color-line-soft: rgba(0, 0, 0, 0.12);
   --color-line-medium: rgba(0, 0, 0, 0.18);
-  --color-cabinet-stroke: rgba(42, 46, 38, 0.13);
-  --color-cabinet-seam: rgba(36, 40, 34, 0.1);
+  --color-cabinet-stroke: rgba(52, 56, 48, 0.11);
 
-  /* Highlight */
+  /* Highlights */
   --color-highlight-soft: rgba(255, 255, 255, 0.48);
-  --color-cabinet-edge-highlight: rgba(255, 255, 255, 0.38);
+  --color-cabinet-edge-highlight-top: rgba(255, 255, 255, 0.3);
+  --color-cabinet-edge-highlight-lip: rgba(255, 255, 255, 0.36);
+  --color-cabinet-seam-stroke: rgba(40, 44, 38, 0.11);
+
+  /* Object shadow */
+  --cabinet-shadow-color: #7a8074;
+  --cabinet-shadow-ambient-opacity: 0.1;
+  --cabinet-shadow-contact-opacity: 0.055;
+
+  /* Label plate (raised nameplate — top lighter, bottom slightly darker) */
+  --cabinet-label-top: #d6d9cf;
+  --cabinet-label-bottom: #c9ccc2;
+  --cabinet-label-text: #4f534c;
+  --cabinet-label-rim-dark: rgba(32, 36, 30, 0.28);
+  --cabinet-label-rim-light: rgba(255, 255, 255, 0.38);
+  --cabinet-label-rule: rgba(58, 62, 56, 0.38);
 
   /* Text */
   --color-text-primary: #171717;

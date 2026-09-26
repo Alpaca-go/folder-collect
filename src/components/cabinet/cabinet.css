@@ -126,43 +126,152 @@
   fill: url(#cabinet-grad-front);
 }
 
+.cabinet-object-shadow-shape,
+.cabinet-object-shadow-shape * {
+  fill: #000000;
+  stroke: none;
+}
+
 .cabinet-edge-highlight {
   fill: none;
-  stroke: var(--color-cabinet-edge-highlight);
-  stroke-width: 1;
+  stroke: var(--color-cabinet-edge-highlight-lip);
+  stroke-width: 0.75;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
+}
+
+.cabinet-edge-highlight--top {
+  stroke: var(--color-cabinet-edge-highlight-top);
+  stroke-width: 0.85;
 }
 
 .cabinet-seam-line {
   fill: none;
-  stroke: var(--color-cabinet-seam);
-  stroke-width: 1;
+  stroke: var(--color-cabinet-seam-stroke);
+  stroke-width: 0.9;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
 
-.cabinet-handle {
-  fill: url(#cabinet-grad-front);
-  fill-opacity: 0.94;
-  stroke: var(--color-cabinet-stroke);
-  stroke-width: 1;
+.cabinet-label-group {
+  pointer-events: none;
 }
 
-.cabinet-handle--label {
-  filter: url(#cabinet-label-contact);
+.cabinet-label-plate {
+  fill: url(#cabinet-grad-label);
+  stroke: none;
+  filter: url(#cabinet-label-raised);
 }
 
-.cabinet-handle--slot {
-  filter: url(#cabinet-slot-inset);
+.cabinet-label-rim-top {
+  fill: none;
+  stroke: var(--cabinet-label-rim-light);
+  stroke-width: 0.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-label-rim-bottom {
+  fill: none;
+  stroke: var(--cabinet-label-rim-dark);
+  stroke-width: 0.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-label-rim-left {
+  fill: none;
+  stroke: var(--cabinet-label-rim-light);
+  stroke-width: 0.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-label-rim-right {
+  fill: none;
+  stroke: var(--cabinet-label-rim-dark);
+  stroke-width: 0.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-label-outer-contact {
+  fill: none;
+  stroke: none;
+  pointer-events: none;
+}
+
+.cabinet-label-rivet {
+  fill: url(#cabinet-grad-label);
+  stroke: rgba(42, 46, 40, 0.18);
+  stroke-width: 0.55;
+  filter: url(#cabinet-label-rivet-raised);
+  pointer-events: none;
+}
+
+.cabinet-label-rule {
+  fill: none;
+  stroke: var(--cabinet-label-rule);
+  stroke-width: 0.65;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-handle-slot-group {
+  pointer-events: none;
+}
+
+.cabinet-handle-slot {
+  fill: url(#cabinet-grad-handle);
+  stroke: none;
+  filter: url(#cabinet-slot-recess);
+}
+
+.cabinet-handle-rim-top {
+  fill: none;
+  stroke: var(--cabinet-handle-rim-dark);
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-handle-rim-bottom {
+  fill: none;
+  stroke: var(--cabinet-handle-rim-light);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-handle-outer-contact {
+  fill: none;
+  stroke: none;
+  pointer-events: none;
 }
 
 .cabinet-label {
-  fill: var(--color-text-primary);
-  font-family: 'HarmonyOS Sans SC', HarmonyOS_Sans_SC, system-ui, sans-serif;
-  font-size: 12px;
+  fill: var(--cabinet-label-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  filter: url(#cabinet-label-text-engrave);
+  pointer-events: none;
 }
 
 /* Viewport "div" — clips drawer interior, moves with door via parent transform */
