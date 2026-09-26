@@ -16,12 +16,28 @@
   --color-cabinet-inner: #b5b9ae;
   --color-cabinet-edge: #c0c4b9;
 
+  /* Cabinet gradients (very low contrast) */
+  --cabinet-grad-top-a: #d9dbd3;
+  --cabinet-grad-top-b: #d2d5cc;
+
+  --cabinet-grad-front-a: #cbcfc5;
+  --cabinet-grad-front-b: #c5c8be;
+
+  --cabinet-grad-side-a: #c1c5ba;
+  --cabinet-grad-side-b: #b7bbb0;
+
+  --cabinet-grad-inner-a: #b9bdb2;
+  --cabinet-grad-inner-b: #b0b5a9;
+
   /* Lines */
   --color-line-soft: rgba(0, 0, 0, 0.12);
   --color-line-medium: rgba(0, 0, 0, 0.18);
+  --color-cabinet-stroke: rgba(42, 46, 38, 0.13);
+  --color-cabinet-seam: rgba(36, 40, 34, 0.1);
 
   /* Highlight */
   --color-highlight-soft: rgba(255, 255, 255, 0.48);
+  --color-cabinet-edge-highlight: rgba(255, 255, 255, 0.38);
 
   /* Text */
   --color-text-primary: #171717;

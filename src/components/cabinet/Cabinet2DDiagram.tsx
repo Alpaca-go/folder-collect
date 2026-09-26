@@ -152,6 +152,45 @@ export default function Cabinet2DDiagram({
           <clipPath id="drawer-interior-clip" clipPathUnits="userSpaceOnUse">
             <path clipRule="evenodd" d={DRAWER_INTERIOR_CLIP_D} />
           </clipPath>
+
+          <linearGradient id="cabinet-grad-top" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stopColor="var(--cabinet-grad-top-a)" />
+            <stop offset="100%" stopColor="var(--cabinet-grad-top-b)" />
+          </linearGradient>
+          <linearGradient id="cabinet-grad-front" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stopColor="var(--cabinet-grad-front-a)" />
+            <stop offset="100%" stopColor="var(--cabinet-grad-front-b)" />
+          </linearGradient>
+          <linearGradient id="cabinet-grad-side" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stopColor="var(--cabinet-grad-side-a)" />
+            <stop offset="100%" stopColor="var(--cabinet-grad-side-b)" />
+          </linearGradient>
+          <linearGradient id="cabinet-grad-inner" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+            <stop offset="0%" stopColor="var(--cabinet-grad-inner-a)" />
+            <stop offset="100%" stopColor="var(--cabinet-grad-inner-b)" />
+          </linearGradient>
+
+          <filter
+            id="cabinet-label-contact"
+            x="-12%"
+            y="-18%"
+            width="124%"
+            height="136%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feDropShadow dx="0" dy="1" stdDeviation="1.2" floodColor="#000000" floodOpacity="0.045" />
+          </filter>
+          <filter
+            id="cabinet-slot-inset"
+            x="-8%"
+            y="-30%"
+            width="116%"
+            height="160%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feDropShadow dx="0" dy="-1" stdDeviation="1" floodColor="#000000" floodOpacity="0.06" />
+            <feDropShadow dx="0" dy="0.5" stdDeviation="0.6" floodColor="#ffffff" floodOpacity="0.07" />
+          </filter>
         </defs>
 
         <g id="cabinet-inner">
@@ -251,19 +290,22 @@ export default function Cabinet2DDiagram({
         >
           <g id="drawer-thickness">
             <polygon className="cabinet-part" points={toPoly(DRAWER_THICKNESS)} />
+            <path className="cabinet-seam-line" d="M0,293.5 L460,293.5" />
           </g>
           <g id="drawer-door">
             <polygon className="cabinet-part" points={toPoly(DRAWER_DOOR)} />
-            <path className="cabinet-part cabinet-handle" d={DRAWER_HANDLE_LABEL_D} />
+            <path className="cabinet-edge-highlight" d="M0,293.5 L460,293.5" />
+            <path className="cabinet-part cabinet-handle cabinet-handle--label" d={DRAWER_HANDLE_LABEL_D} />
             <text className="cabinet-label" transform="matrix(1 0 0 1 180.675 397.7065)">
               Kyries&apos; secret files
             </text>
-            <path className="cabinet-part cabinet-handle" d={DRAWER_HANDLE_SLOT_D} />
+            <path className="cabinet-part cabinet-handle cabinet-handle--slot" d={DRAWER_HANDLE_SLOT_D} />
           </g>
         </g>
 
         <g id="cabinet-top">
           <polygon className="cabinet-part" points={toPoly(CABINET_TOP)} />
+          <path className="cabinet-edge-highlight" d="M1.38,276 L458.62,276" />
         </g>
       </svg>
     </motion.div>

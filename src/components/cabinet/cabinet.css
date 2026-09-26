@@ -90,8 +90,8 @@
 }
 
 .cabinet-part {
-  stroke: var(--color-line-medium);
-  stroke-width: 1.1;
+  stroke: var(--color-cabinet-stroke);
+  stroke-width: 1;
   stroke-linejoin: round;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
@@ -99,36 +99,64 @@
 }
 
 #cabinet-top .cabinet-part {
-  fill: var(--color-cabinet-top);
+  fill: url(#cabinet-grad-top);
 }
 
 #cabinet-thickness .cabinet-part {
-  fill: var(--color-cabinet-side);
+  fill: url(#cabinet-grad-side);
 }
 
 #cabinet-inner .cabinet-part {
-  fill: var(--color-cabinet-inner);
+  fill: url(#cabinet-grad-inner);
 }
 
 #drawer-bottom .cabinet-part {
-  fill: var(--color-cabinet-inner);
+  fill: url(#cabinet-grad-inner);
 }
 
 #drawer-side .cabinet-part {
-  fill: var(--color-cabinet-side);
+  fill: url(#cabinet-grad-side);
 }
 
 #drawer-thickness .cabinet-part {
-  fill: var(--color-cabinet-edge);
+  fill: url(#cabinet-grad-side);
 }
 
 #drawer-door > polygon.cabinet-part {
-  fill: var(--color-cabinet-front);
+  fill: url(#cabinet-grad-front);
+}
+
+.cabinet-edge-highlight {
+  fill: none;
+  stroke: var(--color-cabinet-edge-highlight);
+  stroke-width: 1;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.cabinet-seam-line {
+  fill: none;
+  stroke: var(--color-cabinet-seam);
+  stroke-width: 1;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 .cabinet-handle {
-  fill: rgba(0, 0, 0, 0.035);
-  stroke: var(--color-line-soft);
+  fill: url(#cabinet-grad-front);
+  fill-opacity: 0.94;
+  stroke: var(--color-cabinet-stroke);
+  stroke-width: 1;
+}
+
+.cabinet-handle--label {
+  filter: url(#cabinet-label-contact);
+}
+
+.cabinet-handle--slot {
+  filter: url(#cabinet-slot-inset);
 }
 
 .cabinet-label {

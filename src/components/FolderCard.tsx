@@ -110,8 +110,7 @@ export default function FolderCard({
         },
       }}
       style={{
-        zIndex:
-          isCentered || mode === 'closing' || mode === 'returning' ? 100 : stackZIndexForIndex(index),
+        zIndex: isCentered || mode === 'returning' ? 100 : stackZIndexForIndex(index),
         transformPerspective: FOLDER_PERSPECTIVE,
         transformOrigin: '50% 0%',
         pointerEvents:
