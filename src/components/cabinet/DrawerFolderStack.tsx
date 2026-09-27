@@ -176,6 +176,7 @@ export default function DrawerFolderStack({
             width={slot.width}
             height={slot.height}
             className="drawer-folder-slot"
+            xmlns="http://www.w3.org/1999/xhtml"
           >
             <div
               ref={(element) => {

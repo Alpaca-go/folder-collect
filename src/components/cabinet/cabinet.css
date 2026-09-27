@@ -27,12 +27,96 @@
   width: var(--diagram-w);
   max-height: var(--diagram-max-h);
   aspect-ratio: 460 / 757;
+  overflow: visible;
   cursor: pointer;
   border: 0;
   padding: 0;
   background: transparent;
   box-shadow: none;
   filter: none;
+}
+
+/* PSD cabinet-v3-con: 1380×2271 — layers placed by bounds from source file */
+.cabinet-diagram-wrap--raster {
+  --raster-stage-w: min(
+    var(--diagram-w),
+    calc(var(--diagram-max-h) * var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271))
+  );
+
+  aspect-ratio: auto;
+  width: var(--raster-stage-w);
+  max-height: none;
+  overflow: visible;
+}
+
+.cabinet-raster-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271);
+  line-height: 0;
+}
+
+.cabinet-raster-layer {
+  position: absolute;
+  left: calc(var(--layer-x) / var(--psd-doc-w) * 100%);
+  top: calc(var(--layer-y) / var(--psd-doc-h) * 100%);
+  width: calc(var(--layer-w) / var(--psd-doc-w) * 100%);
+  height: calc(var(--layer-h) / var(--psd-doc-h) * 100%);
+  pointer-events: none;
+}
+
+.cabinet-raster-layer--static {
+  z-index: 1;
+}
+
+.cabinet-raster-layer--interior {
+  z-index: 2;
+}
+
+.cabinet-raster-layer--front {
+  z-index: 3;
+}
+
+.cabinet-raster-layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  object-fit: contain;
+}
+
+.cabinet-drawer-motion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  will-change: transform;
+}
+
+.cabinet-drawer-motion--front {
+  z-index: 4;
+}
+
+.cabinet-interaction-svg {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  /* Stage uses line-height: 0 for raster gaps; reset for folder labels in foreignObject */
+  line-height: normal;
+}
+
+.cabinet-interaction-svg .cabinet-door-hit,
+.cabinet-interaction-svg .drawer-viewport-interactive,
+.cabinet-interaction-svg .drawer-folder-clip-interactive {
+  pointer-events: auto;
 }
 
 .cabinet-diagram-wrap:focus {
@@ -87,6 +171,15 @@
   overflow: visible;
   background: transparent;
   filter: none;
+}
+
+.cabinet-raster-image {
+  pointer-events: none;
+}
+
+.cabinet-door-hit-shape {
+  stroke: none;
+  pointer-events: all;
 }
 
 .cabinet-part {
@@ -318,6 +411,7 @@
   width: 460px;
   height: 757px;
   margin-top: -276px;
+  line-height: normal;
 }
 
 .drawer-folder-clip-svg {
@@ -439,6 +533,8 @@
 
 .drawer-mini-folder-label {
   position: absolute;
+  z-index: 3;
+  line-height: 1.2;
   font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--color-text-primary);

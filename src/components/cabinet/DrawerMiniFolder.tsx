@@ -84,18 +84,6 @@ export default function DrawerMiniFolder({
             fill="none"
           />
         </svg>
-        <span
-          className="drawer-mini-folder-label"
-          style={{
-            top: folderHeightRatio(FOLDER_DESIGN.labelTop),
-            left: folderWidthRatio(FOLDER_DESIGN.labelLeft),
-            fontSize: morphOverlay
-              ? folderFontSize(FOLDER_DESIGN.labelFontSize)
-              : `${labelFontSizePx}px`,
-          }}
-        >
-          {name}
-        </span>
       </div>
       <div className="drawer-mini-folder-front">
         <svg className="block h-full w-full" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -133,6 +121,18 @@ export default function DrawerMiniFolder({
           />
         </svg>
       </div>
+      <span
+        className="drawer-mini-folder-label"
+        style={{
+          top: folderHeightRatio(FOLDER_DESIGN.labelTop),
+          left: folderWidthRatio(FOLDER_DESIGN.labelLeft),
+          fontSize: morphOverlay
+            ? folderFontSize(FOLDER_DESIGN.labelFontSize)
+            : `${labelFontSizePx}px`,
+        }}
+      >
+        {name}
+      </span>
     </div>
   )
 }
