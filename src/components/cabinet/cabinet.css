@@ -73,6 +73,15 @@
   z-index: 2;
 }
 
+/* Opening → door lip; bottom edge tracks doorY (same as folder viewport) */
+.cabinet-drawer-interior-clip {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .cabinet-raster-layer--front {
   z-index: 3;
 }

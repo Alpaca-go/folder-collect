@@ -16,6 +16,7 @@ import {
   doorOffsetY,
   folderClipRect,
   drawerViewportLocalRect,
+  drawerInteriorRasterClipInset,
   toPoly,
 } from './cabinet2Layout'
 import { PSD_DOC, PSD_LAYERS } from './cabinetImageLayout'
@@ -127,11 +128,16 @@ export default function Cabinet2DDiagram({
   const doorTranslatePx = useDrawerTranslateY(stageRef, doorY)
   const viewport = drawerViewportLocalRect(doorY)
   const folderClip = folderClipRect(doorY)
+  const interiorClip = drawerInteriorRasterClipInset(doorY)
   const drawerInteractive = doorPull >= DOOR_OPEN_THRESHOLD
   const folderClipInteractive = drawerInteractive && doorOpen && !cabinetExiting
 
   const doorMotionStyle: CSSProperties = {
     transform: `translateY(${doorTranslatePx}px)`,
+  }
+
+  const drawerInteriorClipStyle: CSSProperties = {
+    clipPath: `inset(${interiorClip.topPct}% 0 ${interiorClip.bottomPct}% 0)`,
   }
 
   const handleDoorClick = (event: MouseEvent<SVGGElement>) => {
@@ -200,11 +206,13 @@ export default function Cabinet2DDiagram({
           <img src={cabinetStaticUrl} alt="" draggable={false} />
         </div>
 
-        <div
-          className="cabinet-raster-layer cabinet-raster-layer--interior"
-          style={layerStyle(PSD_LAYERS.interior)}
-        >
-          <img src={drawerInteriorUrl} alt="" draggable={false} />
+        <div className="cabinet-drawer-interior-clip" style={drawerInteriorClipStyle}>
+          <div
+            className="cabinet-raster-layer cabinet-raster-layer--interior"
+            style={layerStyle(PSD_LAYERS.interior)}
+          >
+            <img src={drawerInteriorUrl} alt="" draggable={false} />
+          </div>
         </div>
 
         <svg

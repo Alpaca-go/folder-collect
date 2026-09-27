@@ -113,6 +113,18 @@ export function drawerViewportLocalRect(doorY: number) {
 }
 
 /**
+ * Clip inset for fixed drawer-interior raster — top at cabinet opening,
+ * bottom at door lip (doorY + DOOR_GROUP_TOP_Y); shrinks as the door closes.
+ */
+export function drawerInteriorRasterClipInset(doorY: number) {
+  const lipY = Math.min(CABINET2_VIEW.h, doorY + DOOR_GROUP_TOP_Y)
+  return {
+    topPct: (CABINET_OPENING_Y / CABINET2_VIEW.h) * 100,
+    bottomPct: ((CABINET2_VIEW.h - lipY) / CABINET2_VIEW.h) * 100,
+  }
+}
+
+/**
  * Clip drawer interior below cabinet-top (even-odd: full canvas minus top face).
  * clipPathUnits="userSpaceOnUse" — fixed in SVG space while drawer-group moves.
  */
