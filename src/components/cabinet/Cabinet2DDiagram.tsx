@@ -124,14 +124,14 @@ export default function Cabinet2DDiagram({
   const doorPullTarget = doorOpen ? 1 : foldersSettled ? 0 : 1
   const doorPull = useAnimatedPull(doorPullTarget > 0)
   const doorY = doorOffsetY(doorPull)
-  const drawerTranslatePx = useDrawerTranslateY(stageRef, doorY)
+  const doorTranslatePx = useDrawerTranslateY(stageRef, doorY)
   const viewport = drawerViewportLocalRect(doorY)
   const folderClip = folderClipRect(doorY)
   const drawerInteractive = doorPull >= DOOR_OPEN_THRESHOLD
   const folderClipInteractive = drawerInteractive && doorOpen && !cabinetExiting
 
-  const drawerMotionStyle: CSSProperties = {
-    transform: `translateY(${drawerTranslatePx}px)`,
+  const doorMotionStyle: CSSProperties = {
+    transform: `translateY(${doorTranslatePx}px)`,
   }
 
   const handleDoorClick = (event: MouseEvent<SVGGElement>) => {
@@ -200,13 +200,11 @@ export default function Cabinet2DDiagram({
           <img src={cabinetStaticUrl} alt="" draggable={false} />
         </div>
 
-        <div className="cabinet-drawer-motion" style={drawerMotionStyle}>
-          <div
-            className="cabinet-raster-layer cabinet-raster-layer--interior"
-            style={layerStyle(PSD_LAYERS.interior)}
-          >
-            <img src={drawerInteriorUrl} alt="" draggable={false} />
-          </div>
+        <div
+          className="cabinet-raster-layer cabinet-raster-layer--interior"
+          style={layerStyle(PSD_LAYERS.interior)}
+        >
+          <img src={drawerInteriorUrl} alt="" draggable={false} />
         </div>
 
         <svg
@@ -289,7 +287,7 @@ export default function Cabinet2DDiagram({
           </g>
         </svg>
 
-        <div className="cabinet-drawer-motion cabinet-drawer-motion--front" style={drawerMotionStyle}>
+        <div className="cabinet-drawer-motion cabinet-drawer-motion--front" style={doorMotionStyle}>
           <div
             className="cabinet-raster-layer cabinet-raster-layer--front"
             style={layerStyle(PSD_LAYERS.front)}
