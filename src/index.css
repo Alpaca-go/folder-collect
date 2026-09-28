@@ -62,6 +62,25 @@ body {
   isolation: isolate;
 }
 
+.folder-panel-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.folder-panel-layer {
+  position: absolute;
+  display: block;
+  max-width: none;
+  object-fit: fill;
+  left: calc(var(--layer-x) / var(--psd-doc-w) * 100%);
+  top: calc(var(--layer-y) / var(--psd-doc-h) * 100%);
+  width: calc(var(--layer-w) / var(--psd-doc-w) * 100%);
+  height: calc(var(--layer-h) / var(--psd-doc-h) * 100%);
+}
+
 .folder-stack {
   width: 100%;
   max-width: 100%;

@@ -6,7 +6,9 @@ import {
   folderHeightRatio,
   folderWidthRatio,
 } from '../config/folderDesign'
+import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import FolderInnerCards from './FolderInnerCards'
+import { FolderPanelBack, FolderPanelFront } from './FolderPanelLayers'
 import { stackZIndexForIndex } from '../utils/folderMorph'
 
 const FOLDER_ROTATE_X = -40
@@ -14,16 +16,6 @@ const FOLDER_PERSPECTIVE = 1200
 const INACTIVE_DIVE_Y = 200
 const STACK_SCALE = 0.965
 const ACTIVE_SCALE = 0.9
-
-const BACK_PANEL_PATH =
-  'M16,231.5A15.51,15.51,0,0,1,.5,216V16A15.51,15.51,0,0,1,16,.5H154.79a15.39,15.39,0,0,1,11,4.54L187,26.25a14.4,14.4,0,0,0,10.25,4.25H336A15.51,15.51,0,0,1,351.5,46V216A15.51,15.51,0,0,1,336,231.5Z'
-
-// Trim back panel above the bottom curve so only the front flap draws the visible lower corners.
-const BACK_PANEL_PATH_FLAP_OPEN =
-  'M16,216 H.5 V16 A15.51,15.51,0,0,1,16,.5 H154.79 a15.39,15.39,0,0,1,11,4.54 L187,26.25 a14.4,14.4,0,0,0,10.25,4.25 H336 A15.51,15.51,0,0,1,351.5,46 V216 H16 Z'
-
-const FRONT_PANEL_PATH =
-  'M16,231.5A15.51,15.51,0,0,1,.5,216V76A15.51,15.51,0,0,1,16,60.5H154.79A14.4,14.4,0,0,0,165,56.25L186.25,35a15.39,15.39,0,0,1,11-4.54H336A15.51,15.51,0,0,1,351.5,46V216A15.51,15.51,0,0,1,336,231.5Z'
 
 export type FolderMode = 'default' | 'active' | 'inactive' | 'closing' | 'returning' | 'revealing'
 
@@ -51,7 +43,6 @@ export default function FolderCard({
   onActivate,
   stackSiblingCollapsed = false,
 }: FolderCardProps) {
-  const uid = `folder-${index}`
   const rootRef = useRef<HTMLDivElement>(null)
   const isCentered = mode === 'active' || mode === 'closing'
   const isFlapOpen = mode === 'active'
@@ -67,7 +58,7 @@ export default function FolderCard({
   return (
     <motion.div
       ref={rootRef}
-      className="relative w-full shrink-0 aspect-[352/232] select-none [container-type:inline-size]"
+      className="relative w-full shrink-0 select-none [container-type:inline-size]"
       data-purpose="contact-card"
       data-index={index}
       initial={false}
@@ -120,6 +111,7 @@ export default function FolderCard({
           mode === 'revealing'
             ? 'none'
             : 'auto',
+        aspectRatio: FOLDER_ASPECT_RATIO,
       }}
     >
       {mode === 'default' && (
@@ -138,39 +130,8 @@ export default function FolderCard({
         />
       )}
 
-      {/* Structure 1: Back panel — full folder body + tab */}
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
-        <svg className="w-full h-full block" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id={`backGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="var(--color-folder-back-top)" />
-              <stop offset="100%" stopColor="var(--color-folder-back-bottom)" />
-            </linearGradient>
-            <filter
-              id={`backShadow-${uid}`}
-              x="-20%"
-              y="-20%"
-              width="140%"
-              height="140%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.08" />
-            </filter>
-          </defs>
-          <path
-            d={isCentered ? BACK_PANEL_PATH_FLAP_OPEN : BACK_PANEL_PATH}
-            fill={`url(#backGrad-${uid})`}
-            stroke="rgba(0,0,0,0.12)"
-            strokeWidth="1"
-            filter={usePanelShadow ? `url(#backShadow-${uid})` : undefined}
-          />
-          <path
-            d="M16,1.5 H154.79 a14.39,14.39,0,0,1,10.2,4.2 L186.2,25.3"
-            stroke="rgba(255,255,255,0.7)"
-            strokeWidth="1"
-            fill="none"
-          />
-        </svg>
+        <FolderPanelBack flapOpen={isFlapOpen} panelShadow={usePanelShadow} />
         <span
           className="absolute font-medium tracking-tight text-neutral-900 select-none"
           style={{
@@ -185,7 +146,6 @@ export default function FolderCard({
 
       {showInnerCards && <FolderInnerCards closing={mode === 'closing'} />}
 
-      {/* Structure 2: Front flap — hinged at folder bottom, opens outward */}
       <motion.div
         className="folder-panel-front absolute inset-0 z-20 pointer-events-none"
         style={{
@@ -202,40 +162,7 @@ export default function FolderCard({
           delay: isFlapOpen ? 0.1 : 0,
         }}
       >
-        <svg className="w-full h-full block" viewBox="0 0 352 232" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id={`frontGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="var(--color-folder-front-top)" />
-              <stop offset="100%" stopColor="var(--color-folder-front-bottom)" />
-            </linearGradient>
-            <filter
-              id={`frontShadow-${uid}`}
-              x="-20%"
-              y="-20%"
-              width="140%"
-              height="140%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feDropShadow dx="0" dy="-2" stdDeviation="2" floodColor="#000000" floodOpacity="0.03" />
-              {useStackShadow && (
-                <feDropShadow dx="0" dy="8" stdDeviation="8" floodColor="#000000" floodOpacity="0.12" />
-              )}
-            </filter>
-          </defs>
-          <path
-            d={FRONT_PANEL_PATH}
-            fill={`url(#frontGrad-${uid})`}
-            stroke="rgba(0,0,0,0.14)"
-            strokeWidth="1"
-            filter={useStackShadow ? `url(#frontShadow-${uid})` : undefined}
-          />
-          <path
-            d="M16,61.5 H154.79 A13.4,13.4,0,0,0,164.2,57.5 L185.5,36.2 a14.39,14.39,0,0,1,10.2-4.2 H336"
-            stroke="rgba(255,255,255,0.6)"
-            strokeWidth="1"
-            fill="none"
-          />
-        </svg>
+        <FolderPanelFront stackShadow={useStackShadow} />
       </motion.div>
     </motion.div>
   )
