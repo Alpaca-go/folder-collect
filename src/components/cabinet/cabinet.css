@@ -65,8 +65,16 @@
   pointer-events: none;
 }
 
+.cabinet-raster-layer--background {
+  z-index: 0;
+}
+
 .cabinet-raster-layer--static {
   z-index: 1;
+}
+
+.cabinet-raster-layer--static-shadow {
+  z-index: 0;
 }
 
 .cabinet-raster-layer--interior {
@@ -84,6 +92,10 @@
 
 .cabinet-raster-layer--front {
   z-index: 3;
+}
+
+.cabinet-raster-layer--front-shadow {
+  z-index: 1;
 }
 
 .cabinet-raster-layer img {
@@ -104,6 +116,10 @@
   pointer-events: none;
   z-index: 2;
   will-change: transform;
+}
+
+.cabinet-drawer-motion--front-shadow {
+  z-index: 3;
 }
 
 .cabinet-drawer-motion--front {

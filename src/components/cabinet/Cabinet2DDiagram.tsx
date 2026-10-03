@@ -20,6 +20,10 @@ import {
   toPoly,
 } from './cabinet2Layout'
 import { PSD_DOC, PSD_LAYERS } from './cabinetImageLayout'
+import { CABINET_SHADOW_LAYERS } from './cabinetShadowImageLayout'
+import cabinetBackgroundUrl from '../../assets/cabinet-background.png'
+import cabinetStaticShadowUrl from '../../assets/cabinet-static-shadow.png'
+import drawerFrontShadowUrl from '../../assets/drawer-front-shadow.png'
 import cabinetStaticUrl from '../../assets/cabinet-static.png'
 import drawerInteriorUrl from '../../assets/drawer-interior.png'
 import drawerFrontUrl from '../../assets/drawer-front.png'
@@ -200,6 +204,20 @@ export default function Cabinet2DDiagram({
     >
       <div ref={stageRef} className="cabinet-raster-stage">
         <div
+          className="cabinet-raster-layer cabinet-raster-layer--background"
+          style={layerStyle(CABINET_SHADOW_LAYERS.background)}
+        >
+          <img src={cabinetBackgroundUrl} alt="" draggable={false} />
+        </div>
+
+        <div
+          className="cabinet-raster-layer cabinet-raster-layer--static-shadow"
+          style={layerStyle(CABINET_SHADOW_LAYERS.cabinetStaticShadow)}
+        >
+          <img src={cabinetStaticShadowUrl} alt="" draggable={false} />
+        </div>
+
+        <div
           className="cabinet-raster-layer cabinet-raster-layer--static"
           style={layerStyle(PSD_LAYERS.static)}
         >
@@ -294,6 +312,15 @@ export default function Cabinet2DDiagram({
             <polygon className="cabinet-door-hit-shape" points={toPoly(DRAWER_DOOR)} fill="transparent" />
           </g>
         </svg>
+
+        <div className="cabinet-drawer-motion cabinet-drawer-motion--front-shadow" style={doorMotionStyle}>
+          <div
+            className="cabinet-raster-layer cabinet-raster-layer--front-shadow"
+            style={layerStyle(CABINET_SHADOW_LAYERS.drawerFrontShadow)}
+          >
+            <img src={drawerFrontShadowUrl} alt="" draggable={false} />
+          </div>
+        </div>
 
         <div className="cabinet-drawer-motion cabinet-drawer-motion--front" style={doorMotionStyle}>
           <div
