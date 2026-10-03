@@ -26,7 +26,8 @@ export const FOLDER_MORPH_DURATION_MS = 2200
 export const MORPH_FOLDER_STAGGER = 0.075
 /** How long each folder takes to reach its target, as a fraction of the total timeline. */
 export const MORPH_FOLDER_ITEM_DURATION = 0.475
-export const MORPH_FOLDER_COUNT = 8
+/** Keep in sync with `DRAWER_FOLDER_COUNT` in drawerFolderLayout.ts */
+export const MORPH_FOLDER_COUNT = 10
 
 /** Smooth deceleration — long ease-out tail for spatial movement. */
 export const FOLDER_MORPH_EASE = [0.33, 0, 0.2, 1] as const
@@ -257,6 +258,11 @@ export function areMorphFoldersSettled(
 /** Stack tab order: lower folders sit in front of the ones above. */
 export function stackZIndexForIndex(index: number) {
   return index + 1
+}
+
+/** 1-based stack layer: odd layers normal, even layers mirrored horizontally. */
+export function stackLayerHorizontallyFlipped(index: number) {
+  return index % 2 === 1
 }
 
 /** Stack tab order throughout morph — no in-flight z-index boost. */

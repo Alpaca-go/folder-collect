@@ -1,9 +1,10 @@
 import {
   folderFontSize,
   folderHeightRatio,
-  folderWidthRatio,
+  folderStackLabelInset,
   FOLDER_DESIGN,
 } from '../../config/folderDesign'
+import { stackLayerHorizontallyFlipped } from '../../utils/folderMorph'
 import { FolderPanelBack, FolderPanelFront } from '../FolderPanelLayers'
 
 interface DrawerMiniFolderProps {
@@ -22,6 +23,7 @@ interface DrawerMiniFolderProps {
 
 export default function DrawerMiniFolder({
   name,
+  index,
   width,
   rotateX,
   scale = 1,
@@ -34,6 +36,9 @@ export default function DrawerMiniFolder({
   const labelFontSizePx = Math.round((width / FOLDER_DESIGN.width) * FOLDER_DESIGN.labelFontSize)
   const useStackShadow = !isLast && !morphOverlay
   const usePanelShadow = !morphOverlay
+  const stackFlipped = stackLayerHorizontallyFlipped(index)
+  const scaleX = stackFlipped ? -scale : scale
+  const labelInset = folderStackLabelInset(stackFlipped)
 
   return (
     <div
@@ -41,7 +46,7 @@ export default function DrawerMiniFolder({
       style={{
         width: '100%',
         height: '100%',
-        transform: `translateY(${liftY}%) perspective(${perspective}px) rotateX(${rotateX}deg) scale(${scale})`,
+        transform: `translateY(${liftY}%) perspective(${perspective}px) rotateX(${rotateX}deg) scale(${scaleX}, ${scale})`,
         transformOrigin: `50% ${transformOriginY}%`,
       }}
     >
@@ -55,7 +60,10 @@ export default function DrawerMiniFolder({
         className="drawer-mini-folder-label"
         style={{
           top: folderHeightRatio(FOLDER_DESIGN.labelTop),
-          left: folderWidthRatio(FOLDER_DESIGN.labelLeft),
+          left: labelInset.left,
+          right: labelInset.right,
+          transform: labelInset.transform,
+          transformOrigin: labelInset.transformOrigin,
           fontSize: morphOverlay
             ? folderFontSize(FOLDER_DESIGN.labelFontSize)
             : `${labelFontSizePx}px`,

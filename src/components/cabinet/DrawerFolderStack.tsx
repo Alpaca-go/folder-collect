@@ -11,6 +11,7 @@ import {
   drawerFolderPopProgress,
   drawerFolderPopTotalDurationMs,
   drawerFolderPopY,
+  DRAWER_FOLDER_COUNT,
   layoutDrawerFolders,
 } from './drawerFolderLayout'
 
@@ -21,7 +22,7 @@ interface DrawerFolderStackProps {
   onFolderClick?: (index: number, rects: DOMRect[], names: string[]) => void
 }
 
-const slots = layoutDrawerFolders(contacts.slice(0, 8))
+const slots = layoutDrawerFolders(contacts.slice(0, DRAWER_FOLDER_COUNT))
 const folderCount = slots.length
 const folderPopMaxPull = drawerFolderPopMaxPull(folderCount)
 const folderPopTotalMs = drawerFolderPopTotalDurationMs(folderCount)

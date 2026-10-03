@@ -4,12 +4,12 @@ import {
   FOLDER_DESIGN,
   folderFontSize,
   folderHeightRatio,
-  folderWidthRatio,
+  folderStackLabelInset,
 } from '../config/folderDesign'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import FolderInnerCards from './FolderInnerCards'
 import { FolderPanelBack, FolderPanelFront } from './FolderPanelLayers'
-import { stackZIndexForIndex } from '../utils/folderMorph'
+import { stackLayerHorizontallyFlipped, stackZIndexForIndex } from '../utils/folderMorph'
 
 const FOLDER_ROTATE_X = -40
 const FOLDER_PERSPECTIVE = 1200
@@ -50,6 +50,10 @@ export default function FolderCard({
   const revealDelaySec = revealDelay / 1000
   const useStackShadow = !isCentered && !isFlapOpen && !isLast
   const usePanelShadow = !isCentered && !isFlapOpen
+  const stackFlipped = stackLayerHorizontallyFlipped(index) && !isCentered
+  const stackScale =
+    isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE
+  const labelInset = folderStackLabelInset(stackFlipped)
 
   const handleTap = () => {
     if (rootRef.current && mode === 'default') onActivate(rootRef.current)
@@ -72,7 +76,8 @@ export default function FolderCard({
             : 0,
         opacity: mode === 'inactive' ? 0 : 1,
         rotateX: isCentered ? -6 : FOLDER_ROTATE_X,
-        scale: isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE,
+        scaleX: stackFlipped ? -stackScale : stackScale,
+        scaleY: stackScale,
       }}
       transition={{
         y: {
@@ -88,7 +93,13 @@ export default function FolderCard({
           stiffness: mode === 'returning' ? 280 : mode === 'closing' ? 300 : mode === 'active' ? 260 : 320,
           damping: mode === 'returning' ? 32 : mode === 'closing' ? 30 : mode === 'active' ? 28 : 32,
         },
-        scale: {
+        scaleX: {
+          type: 'spring',
+          stiffness: mode === 'returning' ? 280 : mode === 'revealing' ? 360 : mode === 'active' ? 260 : 320,
+          damping: mode === 'returning' ? 32 : mode === 'revealing' ? 24 : mode === 'active' ? 28 : 32,
+          delay: mode === 'revealing' ? revealDelaySec : 0,
+        },
+        scaleY: {
           type: 'spring',
           stiffness: mode === 'returning' ? 280 : mode === 'revealing' ? 360 : mode === 'active' ? 260 : 320,
           damping: mode === 'returning' ? 32 : mode === 'revealing' ? 24 : mode === 'active' ? 28 : 32,
@@ -136,7 +147,10 @@ export default function FolderCard({
           className="absolute font-medium tracking-tight text-neutral-900 select-none"
           style={{
             top: folderHeightRatio(FOLDER_DESIGN.labelTop),
-            left: folderWidthRatio(FOLDER_DESIGN.labelLeft),
+            left: labelInset.left,
+            right: labelInset.right,
+            transform: labelInset.transform,
+            transformOrigin: labelInset.transformOrigin,
             fontSize: folderFontSize(FOLDER_DESIGN.labelFontSize),
           }}
         >

@@ -2,17 +2,19 @@ import { FOLDER_DESIGN } from '../../config/folderDesign'
 import type { Contact } from '../../data/contacts'
 import { DRAWER_BOTTOM } from './cabinet2Layout'
 
-export const DRAWER_FOLDER_COUNT = 8
+export const DRAWER_FOLDER_COUNT = 10
 
 const FOLDER_ASPECT = FOLDER_DESIGN.height / FOLDER_DESIGN.width
-const DRAWER_STACK_OVERLAP_RATIO = 168 / FOLDER_DESIGN.width
+const DRAWER_STACK_OVERLAP_RATIO = 178 / FOLDER_DESIGN.width
+/** Extra overlap between tabs while keeping the front folder anchored at the drawer lip. */
+const DRAWER_STACK_TIGHTEN_PX = 12
 const WIDTH_PADDING = 0.88
 const FOLDER_SCALE = 0.98
 const FOLDER_ROTATE_X = -40
 const DRAWER_TOP_PAD = -6
 const DRAWER_BOTTOM_PAD = 46
-/** Extra shift toward drawer back (smaller y = up). */
-const STACK_VERTICAL_NUDGE = -54
+/** Extra shift toward drawer back (smaller y = up / deeper inside). */
+const STACK_VERTICAL_NUDGE = -122
 /** Per-folder dip below slot.y at rest — keeps stack shape so folders read as already inside. */
 export const DRAWER_FOLDER_POP_REST_OFFSET = 18
 /** Delay after door animation starts before folders begin popping (ms). */
@@ -133,11 +135,24 @@ export function layoutDrawerFolders(contacts: Contact[]): DrawerFolderSlot[] {
   let overlap = (sumExceptLast - spanNeeded) / (count - 1)
   overlap = Math.max(avgHeight * 0.32, Math.min(defaultOverlap * 1.1, overlap))
 
+  const tighten = Math.min(
+    DRAWER_STACK_TIGHTEN_PX,
+    Math.max(0, avgHeight - overlap - 10),
+  )
+  overlap += tighten
+
   let currentY = drawerTop
   for (let i = 0; i < count; i++) {
     slots[i].y = currentY
     if (i < count - 1) {
       currentY += slots[i].height - overlap
+    }
+  }
+
+  if (tighten > 0) {
+    const anchorShiftY = tighten * (count - 1)
+    for (const slot of slots) {
+      slot.y += anchorShiftY
     }
   }
 
