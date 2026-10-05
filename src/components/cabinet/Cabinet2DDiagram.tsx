@@ -28,7 +28,7 @@ import cabinetStaticUrl from '../../assets/cabinet-static.png'
 import drawerInteriorUrl from '../../assets/drawer-interior.png'
 import drawerFrontUrl from '../../assets/drawer-front.png'
 import DrawerFolderStack from './DrawerFolderStack'
-import { CABINET_EXIT_DURATION_MS } from '../../utils/folderMorph'
+import { CABINET_EXIT_DURATION_MS, CABINET_EXIT_EASE } from '../../utils/folderMorph'
 import './cabinet.css'
 
 const DOOR_OPEN_THRESHOLD = 0.65
@@ -173,7 +173,6 @@ export default function Cabinet2DDiagram({
     }
   }
 
-  const exitEase = [0.22, 0, 0.15, 1] as const
   const exitCompleteSentRef = useRef(false)
 
   useEffect(() => {
@@ -196,7 +195,7 @@ export default function Cabinet2DDiagram({
       animate={{ opacity: cabinetRasterHidden ? 0 : 1 }}
       transition={{
         duration: cabinetExiting ? CABINET_EXIT_DURATION_MS / 1000 : 0,
-        ease: exitEase,
+        ease: CABINET_EXIT_EASE,
       }}
       onAnimationComplete={() => {
         if (!cabinetExiting || exitCompleteSentRef.current) return

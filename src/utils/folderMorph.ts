@@ -2,8 +2,10 @@ import { animate } from 'framer-motion'
 
 /** Keep in sync with `--cabinet-exit-duration` in cabinet.css */
 export const CABINET_EXIT_DURATION_MS = 480
+/** Match cabinet fade so float + gather finish together. */
+export const CABINET_EXIT_EASE = [0.22, 0, 0.15, 1] as const
 /** Move drawer pile to viewport center as one group. */
-export const FOLDER_CENTER_GATHER_DURATION_MS = 400
+export const FOLDER_CENTER_GATHER_DURATION_MS = CABINET_EXIT_DURATION_MS
 /**
  * Max size multiplier at viewport center on wide screens.
  * Actual mult is clamped by {@link computeResponsiveCenterGatherSizeMult}.
@@ -219,10 +221,10 @@ export function lerpFolderGatherShift(
   t: number,
   sizeMult = FOLDER_CENTER_GATHER_SIZE_MULT_MAX,
 ) {
-  const u = easeInOutQuart(t)
-  const mul = lerp(1, sizeMult, u)
-  const cx = from.left + from.width / 2 + dx * u
-  const cy = from.top + from.height / 2 + dy * u
+  // `t` is already eased by runFolderCenterGatherProgress — do not ease twice.
+  const mul = lerp(1, sizeMult, t)
+  const cx = from.left + from.width / 2 + dx * t
+  const cy = from.top + from.height / 2 + dy * t
   const width = from.width * mul
   const height = from.height * mul
 
@@ -425,8 +427,7 @@ export function measureStackFolderRects(count: number) {
 export function runFolderCenterGatherProgress(onUpdate: (progress: number) => void) {
   return animate(0, 1, {
     duration: FOLDER_CENTER_GATHER_DURATION_MS / 1000,
-    // Snappier stop than stack morph — avoids a long “already centered” tail.
-    ease: [0.33, 0, 0.2, 1],
+    ease: CABINET_EXIT_EASE,
     onUpdate,
   })
 }

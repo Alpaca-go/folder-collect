@@ -7,6 +7,8 @@
 .cabinet-home {
   --cabinet-home-ink: #3a4238;
   --cabinet-home-ink-muted: rgba(58, 66, 56, 0.72);
+  /* Resting home (drawer closed): nudge cabinet down without changing scale or drawer math */
+  --cabinet-home-cabinet-offset-y: 15px;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
 }
@@ -101,6 +103,7 @@
   );
   max-height: 100cqh;
   max-width: 100%;
+  transform: translateY(var(--cabinet-home-cabinet-offset-y));
 }
 
 .cabinet-home .cabinet-diagram-wrap--raster {
