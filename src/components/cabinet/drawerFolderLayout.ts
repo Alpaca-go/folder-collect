@@ -2,34 +2,36 @@ import { FOLDER_DESIGN } from '../../config/folderDesign'
 import type { Contact } from '../../data/contacts'
 import { DRAWER_BOTTOM } from './cabinet2Layout'
 
-export const DRAWER_FOLDER_COUNT = 10
+export const DRAWER_FOLDER_COUNT = 16
 
 const FOLDER_ASPECT = FOLDER_DESIGN.height / FOLDER_DESIGN.width
 const DRAWER_STACK_OVERLAP_RATIO = 178 / FOLDER_DESIGN.width
 /** Extra overlap between tabs while keeping the front folder anchored at the drawer lip. */
 const DRAWER_STACK_TIGHTEN_PX = 12
-const WIDTH_PADDING = 0.88
+const DRAWER_FOLDER_WIDTH_RATIO = 0.88
+/** Side inset vs drawer floor width — baked into layout so size never jumps with door state. */
+const WIDTH_PADDING = DRAWER_FOLDER_WIDTH_RATIO * 0.95
 const FOLDER_SCALE = 0.98
 const FOLDER_ROTATE_X = -40
 const DRAWER_TOP_PAD = -6
 const DRAWER_BOTTOM_PAD = 46
 /** Extra shift toward drawer back (smaller y = up / deeper inside). */
-const STACK_VERTICAL_NUDGE = -122
+const STACK_VERTICAL_NUDGE = -238
 /** Per-folder dip below slot.y at rest — keeps stack shape so folders read as already inside. */
 export const DRAWER_FOLDER_POP_REST_OFFSET = 18
 /** Delay after door animation starts before folders begin popping (ms). */
-export const DRAWER_FOLDER_POP_DELAY_MS = 90
+export const DRAWER_FOLDER_POP_DELAY_MS = 75
 /** Base ms for one folder's pop segment (scaled by total timeline). */
-export const DRAWER_FOLDER_POP_DURATION_MS = 400
+export const DRAWER_FOLDER_POP_DURATION_MS = 380
 /** Deeper dip on close — larger travel than open rest offset. */
 export const DRAWER_FOLDER_POP_CLOSE_REST_OFFSET = 36
 /** Per-folder close timing — each folder eases independently for a smooth wave. */
-export const DRAWER_FOLDER_POP_CLOSE_STAGGER_MS = 42
-export const DRAWER_FOLDER_POP_CLOSE_ITEM_MS = 300
+export const DRAWER_FOLDER_POP_CLOSE_STAGGER_MS = 16
+export const DRAWER_FOLDER_POP_CLOSE_ITEM_MS = 165
 /** Stagger between each folder's pop-in (timeline units). */
-export const DRAWER_FOLDER_POP_STAGGER = 0.18
+export const DRAWER_FOLDER_POP_STAGGER = 0.13
 /** Duration of each individual folder's pop segment (timeline units). */
-export const DRAWER_FOLDER_POP_ITEM_DURATION = 0.32
+export const DRAWER_FOLDER_POP_ITEM_DURATION = 0.3
 
 /** Max folderPull needed so every folder completes (depends on count + stagger). */
 export function drawerFolderPopMaxPull(count: number) {

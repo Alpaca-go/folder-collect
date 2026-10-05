@@ -78,20 +78,10 @@ export default function App() {
   }, [listRevealCount])
 
   const isMorphing = folderExit?.phase === 'morph'
-  const showCabinet =
-    folderExit?.phase === 'cabinet-exit' || (!inFilesView && !folderExit)
-  const showFilesLayer = inFilesView || isMorphing
+  const folderExitActive = Boolean(folderExit)
+  const showCabinet = !inFilesView
+  const showFilesLayer = inFilesView
   const showMorphOverlay = Boolean(folderExit?.fromTargets.length)
-  const [drawerCloneReady, setDrawerCloneReady] = useState(false)
-
-  useEffect(() => {
-    if (!showMorphOverlay) {
-      setDrawerCloneReady(false)
-      return
-    }
-    const frame = requestAnimationFrame(() => setDrawerCloneReady(true))
-    return () => cancelAnimationFrame(frame)
-  }, [showMorphOverlay, folderExit?.fromTargets])
   const listRevealActive =
     listRevealCount !== null && listRevealCount < contacts.length
 
@@ -103,11 +93,12 @@ export default function App() {
             onOpenFiles={handleOpenFiles}
             onFolderClick={handleFolderClick}
             cabinetExiting={folderExit?.phase === 'cabinet-exit'}
-            foldersMorphing={isMorphing}
-            drawerFoldersHidden={showMorphOverlay && drawerCloneReady}
+            cabinetRasterHidden={folderExitActive}
+            foldersMorphing={folderExitActive}
+            drawerFoldersHidden={showMorphOverlay}
             onCabinetExitComplete={handleCabinetExitComplete}
           />
-          {folderExit?.phase === 'cabinet-exit' && (
+          {folderExitActive && (
             <div className="folder-stack-measure" aria-hidden="true">
               <PhoneFrame onBack={() => {}} measureOnly />
             </div>
@@ -119,8 +110,6 @@ export default function App() {
         <div className="app-view-layer">
           <PhoneFrame
             onBack={handleBackToCabinet}
-            morphCoverActive={isMorphing}
-            contentHidden={isMorphing}
             listRevealCount={listRevealCount}
             listRevealActive={listRevealActive}
           />
@@ -131,7 +120,9 @@ export default function App() {
         <DrawerFolderMorphOverlay
           fromTargets={folderExit.fromTargets}
           names={folderExit.names}
-          sessionActive={Boolean(folderExit)}
+          stackMeasureActive={folderExitActive}
+          gatherActive={folderExitActive}
+          stackMorphReady={isMorphing}
           onComplete={handleMorphComplete}
         />
       )}

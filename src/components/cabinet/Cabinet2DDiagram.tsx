@@ -101,6 +101,7 @@ interface Cabinet2DDiagramProps {
   onOpenFiles?: () => void
   onFolderClick?: (index: number, rects: DOMRect[], names: string[]) => void
   cabinetExiting?: boolean
+  cabinetRasterHidden?: boolean
   foldersMorphing?: boolean
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
@@ -110,6 +111,7 @@ export default function Cabinet2DDiagram({
   onOpenFiles,
   onFolderClick,
   cabinetExiting = false,
+  cabinetRasterHidden = false,
   foldersMorphing = false,
   drawerFoldersHidden = false,
   onCabinetExitComplete,
@@ -175,10 +177,10 @@ export default function Cabinet2DDiagram({
   const exitCompleteSentRef = useRef(false)
 
   useEffect(() => {
-    if (!cabinetExiting) {
+    if (!cabinetRasterHidden) {
       exitCompleteSentRef.current = false
     }
-  }, [cabinetExiting])
+  }, [cabinetRasterHidden])
 
   return (
     <motion.div
@@ -191,9 +193,9 @@ export default function Cabinet2DDiagram({
         } as CSSProperties
       }
       initial={false}
-      animate={{ opacity: cabinetExiting ? 0 : 1 }}
+      animate={{ opacity: cabinetRasterHidden ? 0 : 1 }}
       transition={{
-        duration: CABINET_EXIT_DURATION_MS / 1000,
+        duration: cabinetExiting ? CABINET_EXIT_DURATION_MS / 1000 : 0,
         ease: exitEase,
       }}
       onAnimationComplete={() => {
@@ -285,7 +287,7 @@ export default function Cabinet2DDiagram({
                     width={CABINET2_VIEW.w}
                     height={CABINET2_VIEW.h}
                   >
-                    {!foldersMorphing && (
+                    {!drawerFoldersHidden && (
                       <DrawerFolderStack
                         doorPull={doorPull}
                         doorOpen={doorOpen}

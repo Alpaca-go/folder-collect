@@ -3,6 +3,151 @@
   --cabinet-exit-duration: 480ms;
 }
 
+/* ── Home copy (reference layout — text outside cabinet raster) ── */
+.cabinet-home {
+  --cabinet-home-ink: #3a4238;
+  --cabinet-home-ink-muted: rgba(58, 66, 56, 0.72);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.cabinet-home--exiting .cabinet-home-hero,
+.cabinet-home--exiting .cabinet-home-cta {
+  opacity: 0;
+  transition: opacity var(--cabinet-exit-duration) cubic-bezier(0.22, 0, 0.15, 1);
+}
+
+.cabinet-home-hero {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: clamp(16px, 4.5vh, 32px);
+  padding-bottom: clamp(10px, 2.5vh, 18px);
+  color: var(--cabinet-home-ink);
+}
+
+.cabinet-home-name {
+  margin: 0;
+  max-width: 100%;
+  font-size: clamp(1.35rem, 5.2vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  line-height: 1.35;
+  padding-inline: 0.2em;
+}
+
+.cabinet-home-role {
+  margin: 0.65rem 0 0;
+  max-width: 100%;
+  font-size: clamp(0.72rem, 2.8vw, 0.8125rem);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
+  color: var(--cabinet-home-ink-muted);
+}
+
+.cabinet-home-divider {
+  width: clamp(36px, 12vw, 52px);
+  height: 1px;
+  margin: clamp(14px, 3.5vh, 22px) auto clamp(12px, 2.8vh, 18px);
+  background: rgba(58, 66, 56, 0.35);
+}
+
+.cabinet-home-works {
+  margin: 0;
+  max-width: 100%;
+  font-size: clamp(0.625rem, 2.4vw, 0.6875rem);
+  font-weight: 500;
+  letter-spacing: 0.32em;
+  line-height: 1.45;
+  padding-inline: 0.2em;
+  text-transform: uppercase;
+}
+
+.cabinet-home-years {
+  margin: 0.45rem 0 0;
+  font-size: clamp(0.625rem, 2.4vw, 0.6875rem);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--cabinet-home-ink-muted);
+}
+
+.cabinet-home-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  container-type: size;
+  container-name: cabinet-home-stage;
+}
+
+/* Size cabinet to the middle row — not full viewport (avoids covering hero/cta). */
+.cabinet-home .cabinet-diagram-wrap {
+  --diagram-max-h: 100cqh;
+  --diagram-w: min(
+    calc(
+      (100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * 0.78
+    ),
+    calc(100cqh * 460 / 757)
+  );
+  max-height: 100cqh;
+  max-width: 100%;
+}
+
+.cabinet-home .cabinet-diagram-wrap--raster {
+  --diagram-max-h: 100cqh;
+  --diagram-w: min(
+    calc(
+      (100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * 0.78
+    ),
+    calc(100cqh * var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271))
+  );
+  --raster-stage-w: min(var(--diagram-w), calc(100cqh * var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271)));
+  width: var(--raster-stage-w);
+  max-height: 100cqh;
+  max-width: 100%;
+}
+
+.cabinet-home-cta {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: clamp(6px, 1.5vh, 12px);
+  padding-bottom: clamp(4px, 1vh, 10px);
+  color: var(--cabinet-home-ink-muted);
+  pointer-events: none;
+}
+
+.cabinet-home-open {
+  margin: 0;
+  max-width: 100%;
+  font-size: clamp(0.625rem, 2.4vw, 0.6875rem);
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  line-height: 1.45;
+  padding-inline: 0.2em;
+  text-transform: uppercase;
+}
+
+.cabinet-home-open-arrow {
+  font-size: clamp(0.875rem, 3.2vw, 1rem);
+  line-height: 1;
+  opacity: 0.85;
+}
+
 /* ── Scene wrapper (2D orthographic) ── */
 .cabinet-scene {
   display: flex;
@@ -14,8 +159,8 @@
 }
 
 .cabinet-diagram-wrap {
-  --diagram-max-h: calc(100vh - var(--app-pad-top) - var(--app-pad-bottom) - 12px);
-  --diagram-max-h: calc(100dvh - var(--app-pad-top) - var(--app-pad-bottom) - 12px);
+  --diagram-max-h: calc(100vh - var(--app-pad-top) - var(--app-pad-bottom) - 12px - var(--cabinet-home-chrome, 0px));
+  --diagram-max-h: calc(100dvh - var(--app-pad-top) - var(--app-pad-bottom) - 12px - var(--cabinet-home-chrome, 0px));
   --diagram-w: min(
     calc(
       (100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * 0.7
@@ -166,7 +311,6 @@
 
 .drawer-folders-suppressed {
   opacity: 0;
-  transition: opacity var(--cabinet-exit-duration) cubic-bezier(0.22, 0, 0.15, 1);
   pointer-events: none;
 }
 
@@ -494,9 +638,8 @@
   position: fixed;
   overflow: visible;
   container-type: inline-size;
-  will-change: left, top, width, height, opacity, transform;
+  will-change: left, top, width, height, transform;
   backface-visibility: hidden;
-  transition: opacity 180ms ease-out;
 }
 
 .drawer-folder-morph-clone .drawer-mini-folder {

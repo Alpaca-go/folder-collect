@@ -21,15 +21,20 @@ import {
 interface DrawerFolderMorphOverlayProps {
   fromTargets: FolderLayoutSnapshot[]
   names: string[]
-  /** Overlay session active — smooth center gather, hold, then stack morph. */
-  sessionActive: boolean
+  stackMeasureActive: boolean
+  /** Center-gather runs for the whole exit session (starts on click, no restart at phase change). */
+  gatherActive: boolean
+  /** Stack morph waits until cabinet fade has finished. */
+  stackMorphReady: boolean
   onComplete: () => void
 }
 
 export default function DrawerFolderMorphOverlay({
   fromTargets,
   names,
-  sessionActive,
+  stackMeasureActive,
+  gatherActive,
+  stackMorphReady,
   onComplete,
 }: DrawerFolderMorphOverlayProps) {
   const [toTargets, setToTargets] = useState<FolderLayoutSnapshot[] | null>(null)
@@ -40,10 +45,12 @@ export default function DrawerFolderMorphOverlay({
   const morphDoneRef = useRef(false)
   const toTargetsRef = useRef<FolderLayoutSnapshot[] | null>(null)
   const fromSnapshotRef = useRef(fromTargets)
+  const stackMorphReadyRef = useRef(stackMorphReady)
   completeRef.current = onComplete
   toTargetsRef.current = toTargets
+  stackMorphReadyRef.current = stackMorphReady
 
-  if (sessionActive) {
+  if (gatherActive) {
     fromSnapshotRef.current = fromTargets
   }
 
@@ -65,7 +72,7 @@ export default function DrawerFolderMorphOverlay({
   )
 
   useLayoutEffect(() => {
-    if (!sessionActive) return
+    if (!stackMeasureActive) return
 
     let cancelled = false
     let attempts = 0
@@ -88,10 +95,10 @@ export default function DrawerFolderMorphOverlay({
     return () => {
       cancelled = true
     }
-  }, [fromTargets.length, sessionActive])
+  }, [fromTargets.length, stackMeasureActive])
 
   useEffect(() => {
-    if (!sessionActive) return
+    if (!gatherActive) return
 
     morphDoneRef.current = false
     setCenterProgress(0)
@@ -129,6 +136,19 @@ export default function DrawerFolderMorphOverlay({
         poll()
       })
 
+    const waitForStackMorphReady = () =>
+      new Promise<void>((resolve) => {
+        const poll = () => {
+          if (cancelled || morphDoneRef.current) return
+          if (stackMorphReadyRef.current) {
+            resolve()
+            return
+          }
+          waitFrame = requestAnimationFrame(poll)
+        }
+        poll()
+      })
+
     const waitForCenterHold = () =>
       new Promise<void>((resolve) => {
         pauseTimer = window.setTimeout(() => resolve(), FOLDER_CENTER_HOLD_AFTER_GATHER_MS)
@@ -144,7 +164,7 @@ export default function DrawerFolderMorphOverlay({
         if (areMorphFoldersSettled(value, folderCount)) {
           finishMorph()
         }
-      })
+      }, folderCount)
       stackControl.then(() => {
         if (!morphDoneRef.current) finishMorph()
       })
@@ -153,7 +173,11 @@ export default function DrawerFolderMorphOverlay({
     centerControl = runFolderCenterGatherProgress(setCenterProgress)
     centerControl.then(() => {
       if (morphDoneRef.current || cancelled) return
-      void Promise.all([waitForCenterHold(), waitForStackTargets()]).then(() => {
+      void Promise.all([
+        waitForCenterHold(),
+        waitForStackTargets(),
+        waitForStackMorphReady(),
+      ]).then(() => {
         if (!cancelled && !morphDoneRef.current) startStackMorph()
       })
     })
@@ -165,13 +189,13 @@ export default function DrawerFolderMorphOverlay({
       window.clearTimeout(pauseTimer)
       cancelAnimationFrame(waitFrame)
     }
-  }, [sessionActive, fromTargets])
+  }, [gatherActive, fromTargets])
 
   const folderCount = fromTargets.length
 
   return (
     <div
-      className="drawer-folder-morph-overlay"
+      className="drawer-folder-morph-overlay bg-appBg"
       aria-hidden="true"
     >
       {gatherFrom.map((from, index) => {

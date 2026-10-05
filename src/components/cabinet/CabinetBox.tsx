@@ -4,6 +4,7 @@ interface CabinetBoxProps {
   onOpenFiles?: () => void
   onFolderClick?: (index: number, rects: DOMRect[], names: string[]) => void
   cabinetExiting?: boolean
+  cabinetRasterHidden?: boolean
   foldersMorphing?: boolean
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
@@ -13,6 +14,7 @@ export default function CabinetBox({
   onOpenFiles,
   onFolderClick,
   cabinetExiting,
+  cabinetRasterHidden,
   foldersMorphing,
   drawerFoldersHidden,
   onCabinetExitComplete,
@@ -23,6 +25,7 @@ export default function CabinetBox({
         onOpenFiles={onOpenFiles}
         onFolderClick={onFolderClick}
         cabinetExiting={cabinetExiting}
+        cabinetRasterHidden={cabinetRasterHidden}
         foldersMorphing={foldersMorphing}
         drawerFoldersHidden={drawerFoldersHidden}
         onCabinetExitComplete={onCabinetExitComplete}

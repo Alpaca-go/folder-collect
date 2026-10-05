@@ -27,7 +27,7 @@ export const MORPH_FOLDER_STAGGER = 0.075
 /** How long each folder takes to reach its target, as a fraction of the total timeline. */
 export const MORPH_FOLDER_ITEM_DURATION = 0.475
 /** Keep in sync with `DRAWER_FOLDER_COUNT` in drawerFolderLayout.ts */
-export const MORPH_FOLDER_COUNT = 10
+export const MORPH_FOLDER_COUNT = 16
 
 /** Smooth deceleration — long ease-out tail for spatial movement. */
 export const FOLDER_MORPH_EASE = [0.33, 0, 0.2, 1] as const
@@ -235,6 +235,14 @@ export function lerpFolderGatherShift(
   }
 }
 
+/** Timeline units — same stagger model as drawer folder pop (pull may exceed 1). */
+export function morphMaxPull(count: number) {
+  if (count <= 1) return MORPH_FOLDER_ITEM_DURATION
+  return (count - 1) * MORPH_FOLDER_STAGGER + MORPH_FOLDER_ITEM_DURATION
+}
+
+const MORPH_DURATION_REF_PULL = morphMaxPull(10)
+
 /** Bottom folder first, then upward one by one. */
 export function morphProgressForIndex(globalProgress: number, index: number, count: number) {
   const orderFromBottom = count - 1 - index
@@ -249,10 +257,12 @@ export function areMorphFoldersSettled(
   count: number,
   threshold = 0.96,
 ) {
+  const maxPull = morphMaxPull(count)
+  if (globalProgress < maxPull * 0.02) return false
   for (let index = 0; index < count; index++) {
     if (morphProgressForIndex(globalProgress, index, count) < threshold) return false
   }
-  return globalProgress > 0
+  return true
 }
 
 /** Stack tab order: lower folders sit in front of the ones above. */
@@ -421,9 +431,15 @@ export function runFolderCenterGatherProgress(onUpdate: (progress: number) => vo
   })
 }
 
-export function runFolderMorphProgress(onUpdate: (progress: number) => void) {
-  return animate(0, 1, {
-    duration: FOLDER_MORPH_DURATION_MS / 1000,
+export function runFolderMorphProgress(
+  onUpdate: (progress: number) => void,
+  count: number,
+) {
+  const maxPull = morphMaxPull(count)
+  const durationSec =
+    (FOLDER_MORPH_DURATION_MS / 1000) * (maxPull / MORPH_DURATION_REF_PULL)
+  return animate(0, maxPull, {
+    duration: durationSec,
     ease: FOLDER_MORPH_EASE,
     onUpdate,
   })
