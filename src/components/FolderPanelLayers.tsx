@@ -19,9 +19,9 @@ function layerCssVars(rect: FolderPsdLayerRect): CSSProperties {
   } as CSSProperties
 }
 
-const BACK_PANEL_SHADOW = 'drop-shadow(0 4px 3px rgba(0, 0, 0, 0.08))'
+const BACK_PANEL_SHADOW = 'drop-shadow(0 4px 4px rgba(0, 0, 0, 0.11))'
 const FRONT_STACK_SHADOW =
-  'drop-shadow(0 -2px 2px rgba(0, 0, 0, 0.03)) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.12))'
+  'drop-shadow(0 -2px 2px rgba(0, 0, 0, 0.045)) drop-shadow(0 8px 9px rgba(0, 0, 0, 0.16))'
 
 interface FolderPanelBackProps {
   flapOpen?: boolean

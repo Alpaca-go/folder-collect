@@ -68,7 +68,7 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
             zIndex: i + 1,
             transformOrigin: '50% 100%',
             borderRadius: radius,
-            boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.1)`,
+            boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
           }}
           initial={{ y: hiddenY, opacity: 0, rotate: 0, scale: 0.92, x: 0 }}
           animate={
