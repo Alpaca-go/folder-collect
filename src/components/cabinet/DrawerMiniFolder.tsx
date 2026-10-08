@@ -6,7 +6,7 @@ import {
   FOLDER_DESIGN,
 } from '../../config/folderDesign'
 import { stackLayerHorizontallyFlipped } from '../../utils/folderMorph'
-import { FolderPanelBack, FolderPanelFront } from '../FolderPanelLayers'
+import { FolderPanelBack, FolderPanelFront, type FolderPanelShadow } from '../FolderPanelLayers'
 
 interface DrawerMiniFolderProps {
   name: string
@@ -18,7 +18,7 @@ interface DrawerMiniFolderProps {
   transformOriginY?: number
   liftY?: number
   isLast?: boolean
-  /** Morph overlay: skip drop-shadow filters and use container-sized labels. */
+  /** Morph overlay: lighter single-filter shadows and container-sized labels. */
   morphOverlay?: boolean
   /** Morph overlay: 3D transform is driven on the root via rAF (not React state). */
   folderRootRef?: Ref<HTMLDivElement>
@@ -38,8 +38,14 @@ export default function DrawerMiniFolder({
   folderRootRef,
 }: DrawerMiniFolderProps) {
   const labelFontSizePx = Math.round((width / FOLDER_DESIGN.width) * FOLDER_DESIGN.labelFontSize)
-  const useStackShadow = !isLast && !morphOverlay
-  const usePanelShadow = !morphOverlay
+  const panelShadow: FolderPanelShadow = morphOverlay ? 'soft' : 'default'
+  const stackShadow: FolderPanelShadow = morphOverlay
+    ? isLast
+      ? 'off'
+      : 'soft'
+    : !isLast
+      ? 'default'
+      : 'off'
   const stackFlipped = stackLayerHorizontallyFlipped(index)
   const scaleX = stackFlipped ? -scale : scale
   const labelInset = folderStackLabelInset(stackFlipped)
@@ -56,10 +62,10 @@ export default function DrawerMiniFolder({
       }}
     >
       <div className="drawer-mini-folder-back">
-        <FolderPanelBack panelShadow={usePanelShadow} />
+        <FolderPanelBack panelShadow={panelShadow} />
       </div>
       <div className="drawer-mini-folder-front">
-        <FolderPanelFront stackShadow={useStackShadow} />
+        <FolderPanelFront stackShadow={stackShadow} />
       </div>
       <span
         className="drawer-mini-folder-label"

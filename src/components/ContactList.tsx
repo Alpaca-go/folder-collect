@@ -170,7 +170,9 @@ export default function ContactList({
   }
 
   return (
-    <div className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}`}>
+    <div
+      className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}`}
+    >
       <main
         ref={scrollRef}
         className={`relative h-full w-full no-scrollbar overscroll-contain pb-[var(--app-pad-bottom)] pt-[var(--app-pad-top)] ${

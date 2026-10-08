@@ -14,24 +14,6 @@
   overflow: hidden;
 }
 
-.cabinet-home-backdrop {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(-1 * var(--app-pad-top));
-  bottom: calc(-1 * var(--app-pad-bottom));
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.cabinet-home-backdrop img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center center;
-}
 
 /* Full-page backdrop replaces PSD-positioned layer inside the diagram */
 .cabinet-home .cabinet-raster-layer--background {

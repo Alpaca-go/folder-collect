@@ -142,7 +142,7 @@ export default function FolderCard({
       )}
 
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
-        <FolderPanelBack flapOpen={isFlapOpen} panelShadow={usePanelShadow} />
+        <FolderPanelBack flapOpen={isFlapOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
         <span
           className="absolute font-medium tracking-tight text-neutral-900 select-none"
           style={{
@@ -192,7 +192,7 @@ export default function FolderCard({
           delay: isFlapOpen ? 0.1 : 0,
         }}
       >
-        <FolderPanelFront stackShadow={useStackShadow} />
+        <FolderPanelFront stackShadow={useStackShadow ? 'default' : 'off'} />
       </motion.div>
     </motion.div>
   )

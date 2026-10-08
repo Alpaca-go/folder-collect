@@ -1,3 +1,4 @@
+import cabinetBackgroundUrl from '../assets/cabinet-background.png'
 import ContactList from './ContactList'
 
 interface PhoneFrameProps {
@@ -26,6 +27,12 @@ export default function PhoneFrame({
       className="relative flex h-full min-h-0 w-full flex-col bg-appBg"
       data-purpose="app-shell"
     >
+      {!measureOnly && (
+        <div className="app-cabinet-backdrop" aria-hidden>
+          <img src={cabinetBackgroundUrl} alt="" draggable={false} />
+        </div>
+      )}
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
       <ContactList
         onBack={onBack}
         stackHidden={stackHidden}
@@ -36,6 +43,7 @@ export default function PhoneFrame({
         listRevealActive={listRevealActive}
         compactHeader={compactHeader}
       />
+      </div>
     </div>
   )
 }
