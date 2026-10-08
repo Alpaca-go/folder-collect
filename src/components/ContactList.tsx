@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { contacts } from '../data/contacts'
 import { type FolderMode } from './FolderCard'
 import StackFolderItem from './StackFolderItem'
 import { useElasticFolderStack } from '../hooks/useElasticFolderStack'
 import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
+import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
 
 const FOLD_DURATION_MS = 520
@@ -193,22 +193,6 @@ export default function ContactList({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <AnimatePresence>
-          {isOverlayOpen && (
-            <motion.div
-              key="folder-focus-scrim"
-              className="folder-focus-scrim pointer-events-none absolute inset-0 z-[35]"
-              aria-hidden
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: closePhase === 'revealing' ? 0.35 : 1,
-              }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.38, ease: [0.22, 0, 0.15, 1] }}
-            />
-          )}
-        </AnimatePresence>
-
         <div className="folder-files-layout">
           <section
             className={`app-inline-pad relative shrink-0 pb-2 pt-4 select-none${
@@ -252,6 +236,22 @@ export default function ContactList({
                 : -1
 
             const { hidden: folderHidden, entering: folderEntering } = getFolderPresentation(index)
+
+            if (measureOnly) {
+              return (
+                <div
+                  key={contact.id}
+                  data-folder-index={index}
+                  className="elastic-folder-wrapper opacity-0 pointer-events-none"
+                >
+                  <div
+                    data-purpose="contact-card"
+                    className="relative w-full shrink-0 select-none [container-type:inline-size]"
+                    style={{ aspectRatio: FOLDER_ASPECT_RATIO }}
+                  />
+                </div>
+              )
+            }
 
             return (
               <StackFolderItem

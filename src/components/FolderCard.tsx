@@ -16,6 +16,8 @@ const FOLDER_PERSPECTIVE = 1200
 const INACTIVE_DIVE_Y = 200
 const STACK_SCALE = 0.965
 const ACTIVE_SCALE = 0.9
+const ACTIVE_ROTATE_X = -6
+const ACTIVE_FLAP_ROTATE_X = -36
 
 export type FolderMode = 'default' | 'active' | 'inactive' | 'closing' | 'returning' | 'revealing'
 
@@ -50,7 +52,7 @@ export default function FolderCard({
   const revealDelaySec = revealDelay / 1000
   const useStackShadow = !isCentered && !isFlapOpen && !isLast
   const usePanelShadow = !isCentered && !isFlapOpen
-  const stackFlipped = stackLayerHorizontallyFlipped(index) && !isCentered
+  const stackFlipped = stackLayerHorizontallyFlipped(index)
   const stackScale =
     isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE
   const labelInset = folderStackLabelInset(stackFlipped)
@@ -75,7 +77,7 @@ export default function FolderCard({
               : INACTIVE_DIVE_Y
             : 0,
         opacity: mode === 'inactive' ? 0 : 1,
-        rotateX: isCentered ? -6 : FOLDER_ROTATE_X,
+        rotateX: isCentered ? ACTIVE_ROTATE_X : FOLDER_ROTATE_X,
         scaleX: stackFlipped ? -stackScale : stackScale,
         scaleY: stackScale,
       }}
@@ -184,7 +186,7 @@ export default function FolderCard({
           transformStyle: 'preserve-3d',
           backfaceVisibility: 'hidden',
         }}
-        animate={{ rotateX: isFlapOpen ? -36 : 0 }}
+        animate={{ rotateX: isFlapOpen ? ACTIVE_FLAP_ROTATE_X : 0 }}
         transition={{
           type: 'spring',
           stiffness: mode === 'closing' ? 300 : 240,

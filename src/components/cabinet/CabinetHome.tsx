@@ -9,6 +9,7 @@ interface CabinetHomeProps {
   foldersMorphing?: boolean
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
+  cabinetStageHidden?: boolean
 }
 
 export default function CabinetHome({
@@ -19,6 +20,7 @@ export default function CabinetHome({
   foldersMorphing,
   drawerFoldersHidden,
   onCabinetExitComplete,
+  cabinetStageHidden = false,
 }: CabinetHomeProps) {
   return (
     <div
@@ -36,7 +38,9 @@ export default function CabinetHome({
         <p className="cabinet-home-years">2023 — 2026</p>
       </header>
 
-      <div className="cabinet-home-stage min-h-0">
+      <div
+        className={`cabinet-home-stage min-h-0${cabinetStageHidden ? ' cabinet-home-stage--hidden' : ''}`}
+      >
         <CabinetBox
           onOpenFiles={onOpenFiles}
           onFolderClick={onFolderClick}

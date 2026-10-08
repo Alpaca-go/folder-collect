@@ -97,6 +97,7 @@ export default function App() {
             foldersMorphing={folderExitActive}
             drawerFoldersHidden={showMorphOverlay}
             onCabinetExitComplete={handleCabinetExitComplete}
+            cabinetStageHidden={folderExit?.phase === 'morph'}
           />
           {folderExitActive && (
             <div className="folder-stack-measure" aria-hidden="true">

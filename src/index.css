@@ -154,20 +154,6 @@ body {
   }
 }
 
-/* Folder stack: scrim sits under #cards-stack (z-50); dims header only, not active folder */
-.folder-focus-scrim {
-  background:
-    radial-gradient(
-      ellipse 95% 72% at 50% 42%,
-      rgba(18, 20, 16, 0.42) 0%,
-      rgba(10, 12, 10, 0.72) 55%,
-      rgba(6, 7, 6, 0.88) 100%
-    ),
-    rgba(8, 9, 8, 0.55);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-
 .folder-focus-glow {
   position: absolute;
   left: 2%;

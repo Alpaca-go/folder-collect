@@ -259,7 +259,7 @@ export default function DrawerFolderMorphOverlay({
   const folderCount = fromTargets.length
 
   return (
-    <div className="drawer-folder-morph-overlay bg-appBg" aria-hidden="true">
+    <div className="drawer-folder-morph-overlay" aria-hidden="true">
       {gatherFrom.map((from, index) => (
         <div
           key={names[index]}
