@@ -9,7 +9,7 @@ export const FOLDER_DESIGN = {
   stackBottomTrim: 170,
   innerCardHeight: 108,
   innerCardHiddenY: 14,
-  innerCardPeekY: -74,
+  innerCardPeekY: -96,
   innerCardInsetX: 8,
   innerCardRadius: 12,
   innerCardShadowY: 4,
@@ -22,9 +22,9 @@ export const FOLDER_DESIGN = {
 } as const
 
 export const INNER_CARDS = [
-  { rotate: -10, x: -12, delay: 0.32 },
+  { rotate: -12, x: -14, delay: 0.32 },
   { rotate: -1, x: 0, delay: 0.48 },
-  { rotate: 8, x: 14, delay: 0.64 },
+  { rotate: 11, x: 16, delay: 0.64 },
 ] as const
 
 export const designPx = (value: number, scale: number) => value * scale

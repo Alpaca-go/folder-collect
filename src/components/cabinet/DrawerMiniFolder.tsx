@@ -1,3 +1,4 @@
+import type { Ref } from 'react'
 import {
   folderFontSize,
   folderHeightRatio,
@@ -19,6 +20,8 @@ interface DrawerMiniFolderProps {
   isLast?: boolean
   /** Morph overlay: skip drop-shadow filters and use container-sized labels. */
   morphOverlay?: boolean
+  /** Morph overlay: 3D transform is driven on the root via rAF (not React state). */
+  folderRootRef?: Ref<HTMLDivElement>
 }
 
 export default function DrawerMiniFolder({
@@ -32,6 +35,7 @@ export default function DrawerMiniFolder({
   liftY = -10,
   isLast = false,
   morphOverlay = false,
+  folderRootRef,
 }: DrawerMiniFolderProps) {
   const labelFontSizePx = Math.round((width / FOLDER_DESIGN.width) * FOLDER_DESIGN.labelFontSize)
   const useStackShadow = !isLast && !morphOverlay
@@ -42,6 +46,7 @@ export default function DrawerMiniFolder({
 
   return (
     <div
+      ref={folderRootRef}
       className="drawer-mini-folder"
       style={{
         width: '100%',

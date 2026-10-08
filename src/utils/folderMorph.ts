@@ -287,6 +287,25 @@ export function morphFolderOpacity() {
   return 1
 }
 
+/** Apply morph layout on overlay clones (imperative — avoids per-frame React renders). */
+export function applyMorphCloneFrame(
+  cloneEl: HTMLElement,
+  folderEl: HTMLElement,
+  layout: FolderLayoutSnapshot,
+  index: number,
+) {
+  cloneEl.style.left = `${layout.left}px`
+  cloneEl.style.top = `${layout.top}px`
+  cloneEl.style.width = `${layout.width}px`
+  cloneEl.style.height = `${layout.height}px`
+  cloneEl.style.transform = 'translateZ(0)'
+
+  const flipped = stackLayerHorizontallyFlipped(index)
+  const scaleX = flipped ? -layout.scale : layout.scale
+  folderEl.style.transform = `translateY(${layout.liftY}%) perspective(${layout.perspective}px) rotateX(${layout.rotateX}deg) scale(${scaleX}, ${layout.scale})`
+  folderEl.style.transformOrigin = `50% ${layout.transformOriginY}%`
+}
+
 /** Smooth scale-up when overlay replaces the clipped drawer view. */
 export function cabinetExitRevealScale(progress: number, from = 0.9) {
   const t = easeOutCubic(Math.min(1, Math.max(0, progress)))

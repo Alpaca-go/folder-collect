@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        appBg: '#d6d8cf',
+        appBg: 'var(--color-app-bg)',
         cardBg: '#c8cac0',
         cardHighlight: '#e3e5dc',
         cardBorder: '#b3b6aa',

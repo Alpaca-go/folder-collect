@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import DrawerMiniFolder from './DrawerMiniFolder'
 import {
   FOLDER_CENTER_HOLD_AFTER_GATHER_MS,
   type FolderLayoutSnapshot,
+  applyMorphCloneFrame,
   areMorphFoldersSettled,
   computeResponsiveCenterGatherSizeMult,
   computeViewportGatherShift,
@@ -38,14 +39,17 @@ export default function DrawerFolderMorphOverlay({
   onComplete,
 }: DrawerFolderMorphOverlayProps) {
   const [toTargets, setToTargets] = useState<FolderLayoutSnapshot[] | null>(null)
-  const [centerProgress, setCenterProgress] = useState(0)
-  const [stackMorphActive, setStackMorphActive] = useState(false)
-  const [stackProgress, setStackProgress] = useState(0)
   const completeRef = useRef(onComplete)
   const morphDoneRef = useRef(false)
   const toTargetsRef = useRef<FolderLayoutSnapshot[] | null>(null)
   const fromSnapshotRef = useRef(fromTargets)
   const stackMorphReadyRef = useRef(stackMorphReady)
+  const cloneRefs = useRef<(HTMLDivElement | null)[]>([])
+  const folderRefs = useRef<(HTMLDivElement | null)[]>([])
+  const centerProgressRef = useRef(0)
+  const stackProgressRef = useRef(0)
+  const stackMorphActiveRef = useRef(false)
+
   completeRef.current = onComplete
   toTargetsRef.current = toTargets
   stackMorphReadyRef.current = stackMorphReady
@@ -71,6 +75,51 @@ export default function DrawerFolderMorphOverlay({
     [gatherFrom, gatherShift.dx, gatherShift.dy, gatherSizeMult],
   )
 
+  const morphLayoutRef = useRef({
+    gatherFrom,
+    gatherShift,
+    gatherSizeMult,
+    centerSnapshots,
+  })
+  morphLayoutRef.current = {
+    gatherFrom,
+    gatherShift,
+    gatherSizeMult,
+    centerSnapshots,
+  }
+
+  const applyFrame = useCallback(
+    (centerProgress: number, stackMorphActive: boolean, stackProgress: number) => {
+      centerProgressRef.current = centerProgress
+      stackProgressRef.current = stackProgress
+      stackMorphActiveRef.current = stackMorphActive
+
+      const { gatherFrom: from, gatherShift: shift, gatherSizeMult: sizeMult, centerSnapshots: centers } =
+        morphLayoutRef.current
+      const targets = toTargetsRef.current
+      const folderCount = from.length
+
+      for (let index = 0; index < folderCount; index++) {
+        const start = from[index]
+        const center = centers[index]
+        const to = targets?.[index] ?? center
+        const stackLocalT = stackMorphActive
+          ? morphProgressForIndex(stackProgress, index, folderCount)
+          : 0
+        const layout = stackMorphActive
+          ? lerpFolderLayout(center, to, stackLocalT)
+          : lerpFolderGatherShift(start, shift.dx, shift.dy, centerProgress, sizeMult)
+
+        const cloneEl = cloneRefs.current[index]
+        const folderEl = folderRefs.current[index]
+        if (!cloneEl || !folderEl) continue
+
+        applyMorphCloneFrame(cloneEl, folderEl, layout, index)
+      }
+    },
+    [],
+  )
+
   useLayoutEffect(() => {
     if (!stackMeasureActive) return
 
@@ -81,6 +130,7 @@ export default function DrawerFolderMorphOverlay({
       if (cancelled) return
       const targets = measureStackFolderTargets(fromTargets.length)
       if (targets.length === fromTargets.length) {
+        toTargetsRef.current = targets
         setToTargets(targets)
         return
       }
@@ -97,13 +147,23 @@ export default function DrawerFolderMorphOverlay({
     }
   }, [fromTargets.length, stackMeasureActive])
 
+  useLayoutEffect(() => {
+    if (!toTargets) return
+    applyFrame(centerProgressRef.current, stackMorphActiveRef.current, stackProgressRef.current)
+  }, [toTargets, applyFrame])
+
+  useLayoutEffect(() => {
+    applyFrame(0, false, 0)
+  }, [gatherFrom, applyFrame])
+
   useEffect(() => {
     if (!gatherActive) return
 
     morphDoneRef.current = false
-    setCenterProgress(0)
-    setStackMorphActive(false)
-    setStackProgress(0)
+    stackMorphActiveRef.current = false
+    centerProgressRef.current = 0
+    stackProgressRef.current = 0
+    applyFrame(0, false, 0)
 
     let cancelled = false
     let centerControl: ReturnType<typeof runFolderCenterGatherProgress> | null = null
@@ -157,10 +217,10 @@ export default function DrawerFolderMorphOverlay({
     const startStackMorph = () => {
       if (cancelled || morphDoneRef.current || stackScheduled) return
       stackScheduled = true
-      setStackMorphActive(true)
+      stackMorphActiveRef.current = true
 
       stackControl = runFolderMorphProgress((value) => {
-        setStackProgress(value)
+        applyFrame(1, true, value)
         if (areMorphFoldersSettled(value, folderCount)) {
           finishMorph()
         }
@@ -170,7 +230,9 @@ export default function DrawerFolderMorphOverlay({
       })
     }
 
-    centerControl = runFolderCenterGatherProgress(setCenterProgress)
+    centerControl = runFolderCenterGatherProgress((progress) => {
+      applyFrame(progress, false, 0)
+    })
     centerControl.then(() => {
       if (morphDoneRef.current || cancelled) return
       void Promise.all([
@@ -189,59 +251,43 @@ export default function DrawerFolderMorphOverlay({
       window.clearTimeout(pauseTimer)
       cancelAnimationFrame(waitFrame)
     }
-  }, [gatherActive, fromTargets])
+  }, [gatherActive, fromTargets, applyFrame])
 
   const folderCount = fromTargets.length
 
   return (
-    <div
-      className="drawer-folder-morph-overlay bg-appBg"
-      aria-hidden="true"
-    >
-      {gatherFrom.map((from, index) => {
-        const center = centerSnapshots[index]
-        const to = toTargets?.[index] ?? center
-        const stackLocalT = stackMorphActive
-          ? morphProgressForIndex(stackProgress, index, folderCount)
-          : 0
-        const layout = stackMorphActive
-          ? lerpFolderLayout(center, to, stackLocalT)
-          : lerpFolderGatherShift(
-              from,
-              gatherShift.dx,
-              gatherShift.dy,
-              centerProgress,
-              gatherSizeMult,
-            )
-
-        return (
-          <div
-            key={names[index]}
-            className="drawer-folder-morph-clone"
-            style={{
-              left: layout.left,
-              top: layout.top,
-              width: layout.width,
-              height: layout.height,
-              zIndex: morphZIndexForIndex(index, folderCount, stackLocalT),
-              opacity: morphFolderOpacity(),
-              transform: 'translateZ(0)',
+    <div className="drawer-folder-morph-overlay bg-appBg" aria-hidden="true">
+      {gatherFrom.map((from, index) => (
+        <div
+          key={names[index]}
+          ref={(el) => {
+            cloneRefs.current[index] = el
+          }}
+          className="drawer-folder-morph-clone"
+          style={{
+            width: from.width,
+            height: from.height,
+            zIndex: morphZIndexForIndex(index, folderCount, 0),
+            opacity: morphFolderOpacity(),
+          }}
+        >
+          <DrawerMiniFolder
+            morphOverlay
+            folderRootRef={(el) => {
+              folderRefs.current[index] = el
             }}
-          >
-            <DrawerMiniFolder
-              name={names[index]}
-              index={index}
-              width={layout.width}
-              rotateX={layout.rotateX}
-              scale={layout.scale}
-              perspective={layout.perspective}
-              transformOriginY={layout.transformOriginY}
-              liftY={layout.liftY}
-              isLast={index === folderCount - 1}
-            />
-          </div>
-        )
-      })}
+            name={names[index]}
+            index={index}
+            width={from.width}
+            rotateX={from.rotateX}
+            scale={from.scale}
+            perspective={from.perspective}
+            transformOriginY={from.transformOriginY}
+            liftY={from.liftY}
+            isLast={index === folderCount - 1}
+          />
+        </div>
+      ))}
     </div>
   )
 }

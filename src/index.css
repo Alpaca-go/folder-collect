@@ -12,6 +12,10 @@
   -webkit-user-select: none;
 }
 
+html {
+  background-color: var(--color-app-bg);
+}
+
 body {
   background-color: var(--color-app-bg);
   margin: 0;
@@ -32,6 +36,7 @@ body {
   display: flex;
   flex-direction: column;
   padding: 0;
+  background-color: var(--color-app-bg);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -81,6 +86,26 @@ body {
   height: calc(var(--layer-h) / var(--psd-doc-h) * 100%);
 }
 
+.folder-files-layout {
+  --folder-files-width-scale: 0.95;
+  --folder-files-hero-min-h: clamp(235px, 26dvh, 38%);
+  --folder-files-stack-offset-top: clamp(8px, 2dvh, 20px);
+  width: calc(100% * var(--folder-files-width-scale));
+  max-width: calc(100% * var(--folder-files-width-scale));
+  margin-inline: auto;
+}
+
+.folder-files-hero-reserve {
+  flex-shrink: 0;
+  min-height: var(--folder-files-hero-min-h);
+  width: 100%;
+  pointer-events: none;
+}
+
+.folder-files-layout .folder-stack {
+  margin-top: var(--folder-files-stack-offset-top);
+}
+
 .folder-stack {
   width: 100%;
   max-width: 100%;
@@ -102,5 +127,58 @@ body {
 
   to {
     opacity: 1;
+  }
+}
+
+/* Folder stack: scrim sits under #cards-stack (z-50); dims header only, not active folder */
+.folder-focus-scrim {
+  background:
+    radial-gradient(
+      ellipse 95% 72% at 50% 42%,
+      rgba(18, 20, 16, 0.42) 0%,
+      rgba(10, 12, 10, 0.72) 55%,
+      rgba(6, 7, 6, 0.88) 100%
+    ),
+    rgba(8, 9, 8, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.folder-focus-glow {
+  position: absolute;
+  left: 2%;
+  right: 2%;
+  top: 28%;
+  bottom: 6%;
+  z-index: 12;
+  pointer-events: none;
+  border-radius: 40% 40% 12% 12% / 35% 35% 8% 8%;
+  background: radial-gradient(
+    ellipse 78% 62% at 50% 88%,
+    rgba(255, 252, 244, 0.92) 0%,
+    rgba(255, 236, 200, 0.55) 18%,
+    rgba(255, 210, 150, 0.22) 38%,
+    rgba(255, 190, 120, 0.06) 52%,
+    transparent 68%
+  );
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  transform: translateZ(0);
+}
+
+@keyframes folder-focus-glow-pulse {
+  0%,
+  100% {
+    filter: blur(10px);
+  }
+
+  50% {
+    filter: blur(13px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .folder-focus-glow {
+    animation: folder-focus-glow-pulse 2.8s ease-in-out infinite;
   }
 }

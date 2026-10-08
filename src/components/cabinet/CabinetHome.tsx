@@ -1,3 +1,4 @@
+import cabinetBackgroundUrl from '../../assets/cabinet-background.png'
 import CabinetBox from './CabinetBox'
 
 interface CabinetHomeProps {
@@ -23,6 +24,10 @@ export default function CabinetHome({
     <div
       className={`cabinet-home relative grid h-full min-h-0 w-full flex-1 bg-appBg pb-[var(--app-pad-bottom)] pt-[var(--app-pad-top)]${cabinetExiting || foldersMorphing ? ' cabinet-home--exiting' : ''}`}
     >
+      <div className="cabinet-home-backdrop" aria-hidden>
+        <img src={cabinetBackgroundUrl} alt="" draggable={false} />
+      </div>
+
       <header className="cabinet-home-hero app-inline-pad" aria-label="Portfolio introduction">
         <h1 className="cabinet-home-name">WANG QI</h1>
         <p className="cabinet-home-role">Visual Designer / Illustrator</p>

@@ -158,6 +158,22 @@ export default function FolderCard({
         </span>
       </div>
 
+      {showInnerCards && (
+        <motion.div
+          className="folder-focus-glow"
+          aria-hidden
+          initial={false}
+          animate={{ opacity: mode === 'closing' ? 0 : 1 }}
+          transition={{
+            opacity: {
+              duration: mode === 'closing' ? 0.28 : 0.5,
+              delay: mode === 'closing' ? 0 : 0.08,
+              ease: [0.22, 0, 0.15, 1],
+            },
+          }}
+        />
+      )}
+
       {showInnerCards && <FolderInnerCards closing={mode === 'closing'} />}
 
       <motion.div
@@ -168,7 +184,7 @@ export default function FolderCard({
           transformStyle: 'preserve-3d',
           backfaceVisibility: 'hidden',
         }}
-        animate={{ rotateX: isFlapOpen ? -30 : 0 }}
+        animate={{ rotateX: isFlapOpen ? -36 : 0 }}
         transition={{
           type: 'spring',
           stiffness: mode === 'closing' ? 300 : 240,

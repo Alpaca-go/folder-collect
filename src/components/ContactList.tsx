@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { contacts } from '../data/contacts'
 import { type FolderMode } from './FolderCard'
 import StackFolderItem from './StackFolderItem'
@@ -185,34 +186,59 @@ export default function ContactList({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <section
-          className={`app-inline-pad relative shrink-0 pb-4 pt-4 select-none${
-            compactHeader ? '' : ' min-h-[var(--title-slot-min-h)]'
-          }${hideContent ? ' invisible' : ''}`}
-          data-purpose="title-slot"
-          aria-hidden={hideContent}
-        >
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={isOverlayOpen}
-            className="mb-3 min-h-[44px] border-0 bg-transparent p-0 text-[clamp(11px,3.2vw,13px)] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default touch-manipulation"
-          >
-            ← back to cabinet
-          </button>
-          <h1 className="text-[clamp(15px,4.5vw,18px)] font-normal tracking-tight text-neutral-900 lowercase pl-1">
-            contact files
-          </h1>
-        </section>
+        <AnimatePresence>
+          {isOverlayOpen && (
+            <motion.div
+              key="folder-focus-scrim"
+              className="folder-focus-scrim pointer-events-none absolute inset-0 z-[35]"
+              aria-hidden
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: closePhase === 'revealing' ? 0.35 : 1,
+              }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.38, ease: [0.22, 0, 0.15, 1] }}
+            />
+          )}
+        </AnimatePresence>
 
-        <div
-          className={`relative flex flex-col w-full folder-stack ${
-            isOverlayOpen ? 'pointer-events-none' : ''
-          }${hideStack ? ' invisible' : ''}`}
-          id="cards-stack"
-          aria-hidden={hideStack}
-        >
-          {contacts.map((contact, index) => {
+        <div className="folder-files-layout">
+          <section
+            className={`app-inline-pad relative shrink-0 pb-2 pt-4 select-none${
+              hideContent ? ' invisible' : ''
+            }`}
+            data-purpose="title-slot"
+            aria-hidden={hideContent}
+          >
+            <button
+              type="button"
+              onClick={onBack}
+              disabled={isOverlayOpen}
+              className="mb-3 min-h-[44px] border-0 bg-transparent p-0 text-[clamp(11px,3.2vw,13px)] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default touch-manipulation"
+            >
+              ← back to cabinet
+            </button>
+            <h1 className="text-[clamp(15px,4.5vw,18px)] font-normal tracking-tight text-neutral-900 lowercase pl-1">
+              contact files
+            </h1>
+          </section>
+
+          {!compactHeader && (
+            <div
+              className="folder-files-hero-reserve app-inline-pad"
+              data-purpose="folder-files-hero-reserve"
+              aria-hidden={hideContent}
+            />
+          )}
+
+          <div
+            className={`relative z-[50] flex flex-col w-full folder-stack ${
+              isOverlayOpen ? 'pointer-events-none' : ''
+            }${hideStack ? ' invisible' : ''}`}
+            id="cards-stack"
+            aria-hidden={hideStack}
+          >
+            {contacts.map((contact, index) => {
             const revealStep =
               closePhase === 'revealing' && activeIndex >= 0
                 ? getRevealStep(index, activeIndex)
@@ -238,6 +264,7 @@ export default function ContactList({
               />
             )
           })}
+          </div>
         </div>
       </main>
 

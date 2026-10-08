@@ -53,7 +53,7 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
       style={{
         top: `${(76 / FOLDER_DESIGN.height) * 100}%`,
         bottom: `${(16 / FOLDER_DESIGN.height) * 100}%`,
-        clipPath: 'inset(-150% -18% 0 -18%)',
+        clipPath: 'inset(-220% -22% 0 -22%)',
       }}
     >
       {INNER_CARDS.map((card, i) => (
