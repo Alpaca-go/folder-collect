@@ -45,7 +45,8 @@ export default function ContactList({
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const elasticEnabled = !activeId && !closePhase && !listRevealActive
+  const elasticEnabled = !measureOnly && !activeId && !closePhase && !listRevealActive
+  const stackContacts = measureOnly ? contacts.slice(0, MORPH_FOLDER_COUNT) : contacts
 
   const {
     elasticOffsets,
@@ -55,7 +56,7 @@ export default function ContactList({
     suppressNextClick,
   } = useElasticFolderStack({
     containerRef: scrollRef,
-    itemCount: contacts.length,
+    itemCount: stackContacts.length,
     enabled: elasticEnabled,
   })
 
@@ -133,13 +134,17 @@ export default function ContactList({
   const stackSiblingsCollapsed =
     closePhase === 'folding' || closePhase === 'returning' || closePhase === 'revealing'
 
-  const hideStack = stackHidden || measureOnly
+  const hideStack = stackHidden && !measureOnly
   const hideContent = contentHidden || measureOnly
   const useNativeScroll = !isOverlayOpen && !elasticEnabled
 
   /** Keep every folder in layout; only opacity changes to avoid stack jumping. */
   const getFolderPresentation = (index: number) => {
-    if (measureOnly || hideStack) {
+    if (measureOnly) {
+      return { hidden: true, entering: false }
+    }
+
+    if (hideStack) {
       return { hidden: true, entering: false }
     }
 
@@ -240,7 +245,7 @@ export default function ContactList({
             id="cards-stack"
             aria-hidden={hideStack}
           >
-            {contacts.map((contact, index) => {
+            {stackContacts.map((contact, index) => {
             const revealStep =
               closePhase === 'revealing' && activeIndex >= 0
                 ? getRevealStep(index, activeIndex)

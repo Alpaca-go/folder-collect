@@ -294,10 +294,10 @@ export function applyMorphCloneFrame(
   layout: FolderLayoutSnapshot,
   index: number,
 ) {
-  cloneEl.style.left = `${layout.left}px`
-  cloneEl.style.top = `${layout.top}px`
-  cloneEl.style.width = `${layout.width}px`
-  cloneEl.style.height = `${layout.height}px`
+  cloneEl.style.left = `${layout.left.toFixed(2)}px`
+  cloneEl.style.top = `${layout.top.toFixed(2)}px`
+  cloneEl.style.width = `${layout.width.toFixed(2)}px`
+  cloneEl.style.height = `${layout.height.toFixed(2)}px`
   cloneEl.style.transform = 'translateZ(0)'
 
   const flipped = stackLayerHorizontallyFlipped(index)

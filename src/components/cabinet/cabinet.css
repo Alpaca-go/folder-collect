@@ -330,6 +330,12 @@
   pointer-events: none;
 }
 
+.cabinet-diagram-wrap.folders-morphing .cabinet-raster-stage,
+.cabinet-diagram-wrap.folders-morphing .cabinet-drawer-motion,
+.cabinet-diagram-wrap.folders-morphing .cabinet-interaction-svg {
+  visibility: hidden;
+}
+
 .folder-stack-measure {
   position: fixed;
   inset: 0;
@@ -337,6 +343,7 @@
   pointer-events: none;
   z-index: -1;
   overflow: hidden;
+  contain: layout style;
 }
 
 .folder-stack-measure-root,

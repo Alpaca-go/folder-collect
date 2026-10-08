@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import DrawerMiniFolder from './DrawerMiniFolder'
 import {
   FOLDER_CENTER_HOLD_AFTER_GATHER_MS,
@@ -38,7 +38,6 @@ export default function DrawerFolderMorphOverlay({
   stackMorphReady,
   onComplete,
 }: DrawerFolderMorphOverlayProps) {
-  const [toTargets, setToTargets] = useState<FolderLayoutSnapshot[] | null>(null)
   const completeRef = useRef(onComplete)
   const morphDoneRef = useRef(false)
   const toTargetsRef = useRef<FolderLayoutSnapshot[] | null>(null)
@@ -51,7 +50,6 @@ export default function DrawerFolderMorphOverlay({
   const stackMorphActiveRef = useRef(false)
 
   completeRef.current = onComplete
-  toTargetsRef.current = toTargets
   stackMorphReadyRef.current = stackMorphReady
 
   if (gatherActive) {
@@ -126,12 +124,20 @@ export default function DrawerFolderMorphOverlay({
     let cancelled = false
     let attempts = 0
 
+    const commitTargets = (targets: FolderLayoutSnapshot[]) => {
+      toTargetsRef.current = targets
+      applyFrame(
+        centerProgressRef.current,
+        stackMorphActiveRef.current,
+        stackProgressRef.current,
+      )
+    }
+
     const measure = () => {
       if (cancelled) return
       const targets = measureStackFolderTargets(fromTargets.length)
       if (targets.length === fromTargets.length) {
-        toTargetsRef.current = targets
-        setToTargets(targets)
+        commitTargets(targets)
         return
       }
 
@@ -141,16 +147,13 @@ export default function DrawerFolderMorphOverlay({
       }
     }
 
-    measure()
+    requestAnimationFrame(() => {
+      requestAnimationFrame(measure)
+    })
     return () => {
       cancelled = true
     }
-  }, [fromTargets.length, stackMeasureActive])
-
-  useLayoutEffect(() => {
-    if (!toTargets) return
-    applyFrame(centerProgressRef.current, stackMorphActiveRef.current, stackProgressRef.current)
-  }, [toTargets, applyFrame])
+  }, [fromTargets.length, stackMeasureActive, applyFrame])
 
   useLayoutEffect(() => {
     applyFrame(0, false, 0)

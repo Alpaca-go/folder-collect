@@ -98,7 +98,7 @@ export default function App() {
             drawerFoldersHidden={showMorphOverlay}
             onCabinetExitComplete={handleCabinetExitComplete}
           />
-          {isMorphing && (
+          {folderExitActive && (
             <div className="folder-stack-measure" aria-hidden="true">
               <PhoneFrame onBack={() => {}} measureOnly />
             </div>
@@ -120,7 +120,7 @@ export default function App() {
         <DrawerFolderMorphOverlay
           fromTargets={folderExit.fromTargets}
           names={folderExit.names}
-          stackMeasureActive={isMorphing}
+          stackMeasureActive={folderExitActive}
           gatherActive={folderExitActive}
           stackMorphReady={isMorphing}
           onComplete={handleMorphComplete}
