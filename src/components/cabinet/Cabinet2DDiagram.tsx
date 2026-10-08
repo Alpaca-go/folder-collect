@@ -23,6 +23,7 @@ import { PSD_DOC, PSD_LAYERS } from './cabinetImageLayout'
 import { CABINET_SHADOW_LAYERS } from './cabinetShadowImageLayout'
 import cabinetBackgroundUrl from '../../assets/cabinet-background.png'
 import cabinetStaticShadowUrl from '../../assets/cabinet-static-shadow.png'
+import cabinetStaticShadow2Url from '../../assets/cabinet-static-shadow-2.png'
 import drawerFrontShadowUrl from '../../assets/drawer-front-shadow.png'
 import cabinetStaticUrl from '../../assets/cabinet-static.png'
 import drawerInteriorUrl from '../../assets/drawer-interior.png'
@@ -32,6 +33,9 @@ import { CABINET_EXIT_DURATION_MS, CABINET_EXIT_EASE } from '../../utils/folderM
 import './cabinet.css'
 
 const DOOR_OPEN_THRESHOLD = 0.65
+/** Start crossfading to open static shadow in the last segment of door travel. */
+const OPEN_STATIC_SHADOW_PULL_START = 0.2
+const STATIC_SHADOW_CROSSFADE_MS = 380
 
 function layerStyle(rect: { x: number; y: number; w: number; h: number }): CSSProperties {
   const { w: docW, h: docH } = PSD_DOC
@@ -137,6 +141,24 @@ export default function Cabinet2DDiagram({
   const interiorClip = drawerInteriorRasterClipInset(doorY)
   const drawerInteractive = doorPull >= DOOR_OPEN_THRESHOLD
   const folderClipInteractive = drawerInteractive && doorOpen && !cabinetExiting
+  const pullBasedOpenStaticShadowMix = Math.min(
+    1,
+    Math.max(
+      0,
+      (doorPull - OPEN_STATIC_SHADOW_PULL_START) / (1 - OPEN_STATIC_SHADOW_PULL_START),
+    ),
+  )
+  /** Folders sink first while the door stays open; fade open shadow when the door starts closing. */
+  const foldersClosingBeforeDoor = !doorOpen && !foldersSettled
+  const doorClosing = !doorOpen && foldersSettled
+  const openStaticShadowMix = doorClosing
+    ? 0
+    : doorOpen || foldersClosingBeforeDoor
+      ? pullBasedOpenStaticShadowMix
+      : 0
+  const staticShadowCrossfade: CSSProperties = {
+    transition: `opacity ${STATIC_SHADOW_CROSSFADE_MS}ms cubic-bezier(0.22, 0, 0.15, 1)`,
+  }
 
   const doorMotionStyle: CSSProperties = {
     transform: `translateY(${doorTranslatePx}px)`,
@@ -215,7 +237,30 @@ export default function Cabinet2DDiagram({
           className="cabinet-raster-layer cabinet-raster-layer--static-shadow"
           style={layerStyle(CABINET_SHADOW_LAYERS.cabinetStaticShadow)}
         >
-          <img src={cabinetStaticShadowUrl} alt="" draggable={false} />
+          <img
+            src={cabinetStaticShadowUrl}
+            alt=""
+            draggable={false}
+            style={{
+              ...staticShadowCrossfade,
+              opacity: 1 - openStaticShadowMix,
+            }}
+          />
+        </div>
+
+        <div
+          className="cabinet-raster-layer cabinet-raster-layer--static-shadow"
+          style={layerStyle(CABINET_SHADOW_LAYERS.cabinetStaticShadow2)}
+        >
+          <img
+            src={cabinetStaticShadow2Url}
+            alt=""
+            draggable={false}
+            style={{
+              ...staticShadowCrossfade,
+              opacity: openStaticShadowMix,
+            }}
+          />
         </div>
 
         <div

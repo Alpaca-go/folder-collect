@@ -20,7 +20,10 @@ const SHADOW_REF_DRAWER_FRONT = { x: 492, y: 1704 } as const
 
 export const SHADOW_PSD_LAYERS = {
   background: { x: 0, y: 0, w: 2365, h: 4202 },
+  /** `cabinet-shadow-con.psd` — door closed */
   cabinetStaticShadow: { x: 1677, y: 1300, w: 538, h: 1041 },
+  /** `cabinet-shadow-v2-con.psd` → `01R_CABINET_STATIC_SHADOW_2` — door open */
+  cabinetStaticShadow2: { x: 1677, y: 1295, w: 499, h: 1873 },
   drawerFrontShadow: { x: 583, y: 2279, w: 1199, h: 750 },
 } as const
 
@@ -49,6 +52,7 @@ function drawerFrontShadowInCabinetDoc() {
 export const CABINET_SHADOW_LAYERS = {
   background: toCabinetDocSpace(SHADOW_PSD_LAYERS.background),
   cabinetStaticShadow: toCabinetDocSpace(SHADOW_PSD_LAYERS.cabinetStaticShadow),
+  cabinetStaticShadow2: toCabinetDocSpace(SHADOW_PSD_LAYERS.cabinetStaticShadow2),
   drawerFrontShadow: drawerFrontShadowInCabinetDoc(),
 } as const
 
