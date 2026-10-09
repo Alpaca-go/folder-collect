@@ -54,8 +54,13 @@ export default function App() {
   }, [])
 
   const handleMorphComplete = useCallback(() => {
+    setListRevealCount((count) =>
+      count === null ? MORPH_FOLDER_COUNT + TAIL_REVEAL_BATCH : count,
+    )
     setInFilesView(true)
-    setFolderExit(null)
+    requestAnimationFrame(() => {
+      setFolderExit(null)
+    })
   }, [])
 
   const handleBackToCabinet = useCallback(() => {

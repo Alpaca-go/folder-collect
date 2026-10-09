@@ -1,13 +1,9 @@
 import { useRef } from 'react'
 import { motion } from 'framer-motion'
-import {
-  FOLDER_DESIGN,
-  folderFontSize,
-  folderHeightRatio,
-  folderStackLabelInset,
-} from '../config/folderDesign'
+import { FOLDER_DESIGN, folderHeightRatio } from '../config/folderDesign'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import FolderInnerCards from './FolderInnerCards'
+import FolderStackLabel from './FolderStackLabel'
 import { FolderPanelBack, FolderPanelFront } from './FolderPanelLayers'
 import { stackLayerHorizontallyFlipped, stackZIndexForIndex } from '../utils/folderMorph'
 
@@ -55,8 +51,6 @@ export default function FolderCard({
   const stackFlipped = stackLayerHorizontallyFlipped(index)
   const stackScale =
     isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE
-  const labelInset = folderStackLabelInset(stackFlipped)
-
   const handleTap = () => {
     if (rootRef.current && mode === 'default') onActivate(rootRef.current)
   }
@@ -145,19 +139,7 @@ export default function FolderCard({
 
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
         <FolderPanelBack flapOpen={isFlapOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
-        <span
-          className="absolute font-medium tracking-tight text-neutral-900 select-none"
-          style={{
-            top: folderHeightRatio(FOLDER_DESIGN.labelTop),
-            left: labelInset.left,
-            right: labelInset.right,
-            transform: labelInset.transform,
-            transformOrigin: labelInset.transformOrigin,
-            fontSize: folderFontSize(FOLDER_DESIGN.labelFontSize),
-          }}
-        >
-          {name}
-        </span>
+        <FolderStackLabel name={name} flipped={stackFlipped} />
       </div>
 
       {showInnerCards && (

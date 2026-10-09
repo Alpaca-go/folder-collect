@@ -640,7 +640,7 @@
   background-color: transparent;
 }
 
-.drawer-folder-morph-overlay--elevated-labels .drawer-mini-folder-label {
+.drawer-folder-morph-overlay--elevated-labels .folder-stack-label {
   visibility: hidden;
 }
 
@@ -695,12 +695,6 @@
   z-index: 2;
 }
 
-.morph-folder-label {
-  top: 7%;
-  left: 5%;
-  font-size: clamp(8px, 3.8cqw, 14px);
-}
-
 .drawer-mini-folder {
   position: relative;
   width: 100%;
@@ -721,19 +715,17 @@
   z-index: 2;
 }
 
-.drawer-mini-folder-label {
+.drawer-mini-folder-label-layer {
   position: absolute;
+  inset: 0;
   z-index: 3;
-  line-height: 1.2;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 72%;
   pointer-events: none;
-  user-select: none;
+}
+
+.folder-stack-label {
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .cabinet-door-hit {

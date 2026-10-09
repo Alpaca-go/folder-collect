@@ -1,11 +1,7 @@
 import type { Ref } from 'react'
-import {
-  folderFontSize,
-  folderHeightRatio,
-  folderStackLabelInset,
-  FOLDER_DESIGN,
-} from '../../config/folderDesign'
+import { FOLDER_DESIGN } from '../../config/folderDesign'
 import { stackLayerHorizontallyFlipped } from '../../utils/folderMorph'
+import FolderStackLabel from '../FolderStackLabel'
 import { FolderPanelBack, FolderPanelFront, type FolderPanelShadow } from '../FolderPanelLayers'
 
 interface DrawerMiniFolderProps {
@@ -48,7 +44,8 @@ export default function DrawerMiniFolder({
       : 'off'
   const stackFlipped = stackLayerHorizontallyFlipped(index)
   const scaleX = stackFlipped ? -scale : scale
-  const labelInset = folderStackLabelInset(stackFlipped)
+
+  const labelFontSize = morphOverlay ? undefined : `${labelFontSizePx}px`
 
   return (
     <div
@@ -67,21 +64,9 @@ export default function DrawerMiniFolder({
       <div className="drawer-mini-folder-front">
         <FolderPanelFront stackShadow={stackShadow} />
       </div>
-      <span
-        className="drawer-mini-folder-label"
-        style={{
-          top: folderHeightRatio(FOLDER_DESIGN.labelTop),
-          left: labelInset.left,
-          right: labelInset.right,
-          transform: labelInset.transform,
-          transformOrigin: labelInset.transformOrigin,
-          fontSize: morphOverlay
-            ? folderFontSize(FOLDER_DESIGN.labelFontSize)
-            : `${labelFontSizePx}px`,
-        }}
-      >
-        {name}
-      </span>
+      <div className="drawer-mini-folder-label-layer">
+        <FolderStackLabel name={name} flipped={stackFlipped} fontSize={labelFontSize} />
+      </div>
     </div>
   )
 }
