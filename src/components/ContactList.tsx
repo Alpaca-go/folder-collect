@@ -6,6 +6,7 @@ import { useElasticFolderStack } from '../hooks/useElasticFolderStack'
 import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
+import CabinetHomeHero from './cabinet/CabinetHomeHero'
 
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
@@ -27,6 +28,8 @@ interface ContactListProps {
   listRevealCount?: number | null
   listRevealActive?: boolean
   compactHeader?: boolean
+  /** After drawer morph: show home hero instead of “contact files” title. */
+  showHomeHero?: boolean
 }
 
 export default function ContactList({
@@ -38,6 +41,7 @@ export default function ContactList({
   listRevealCount = null,
   listRevealActive = false,
   compactHeader = false,
+  showHomeHero = false,
 }: ContactListProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [centerOffsetY, setCenterOffsetY] = useState(0)
@@ -180,7 +184,9 @@ export default function ContactList({
     >
       <main
         ref={scrollRef}
-        className={`relative h-full w-full no-scrollbar overscroll-contain pb-[var(--app-pad-bottom)] pt-[var(--app-pad-top)] ${
+        className={`relative h-full w-full no-scrollbar overscroll-contain pb-[var(--app-pad-bottom)] ${
+          showHomeHero ? '' : 'pt-[var(--app-pad-top)]'
+        } ${
           isOverlayOpen
             ? 'overflow-y-hidden touch-pan-y'
             : useNativeScroll
@@ -193,28 +199,55 @@ export default function ContactList({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <div className="folder-files-layout">
-          <section
-            className={`app-inline-pad relative shrink-0 pb-2 pt-4 select-none${
-              hideContent ? ' invisible' : ''
-            }`}
-            data-purpose="title-slot"
-            aria-hidden={hideContent}
-          >
-            <button
-              type="button"
-              onClick={onBack}
-              disabled={isOverlayOpen}
-              className="mb-3 min-h-[44px] border-0 bg-transparent p-0 text-[clamp(11px,3.2vw,13px)] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default touch-manipulation"
+        <div
+          className={`folder-files-layout${showHomeHero ? ' folder-files-layout--home-hero' : ''}`}
+        >
+          {showHomeHero ? (
+            <section
+              className={`cabinet-home-hero-region relative shrink-0 select-none${
+                hideContent ? ' invisible' : ''
+              }`}
+              data-purpose="title-slot"
+              aria-hidden={hideContent}
             >
-              ← back to cabinet
-            </button>
-            <h1 className="text-[clamp(15px,4.5vw,18px)] font-normal tracking-tight text-neutral-900 lowercase pl-1">
-              contact files
-            </h1>
-          </section>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onBack()
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                disabled={isOverlayOpen}
+                className="cabinet-home-back"
+                data-purpose="cabinet-back"
+              >
+                ← back to cabinet
+              </button>
+              <CabinetHomeHero inlinePad={false} />
+            </section>
+          ) : (
+            <section
+              className={`app-inline-pad relative shrink-0 pb-2 pt-4 select-none${
+                hideContent ? ' invisible' : ''
+              }`}
+              data-purpose="title-slot"
+              aria-hidden={hideContent}
+            >
+              <button
+                type="button"
+                onClick={onBack}
+                disabled={isOverlayOpen}
+                className="mb-3 min-h-[44px] border-0 bg-transparent p-0 text-[clamp(11px,3.2vw,13px)] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default touch-manipulation"
+              >
+                ← back to cabinet
+              </button>
+              <h1 className="text-[clamp(15px,4.5vw,18px)] font-normal tracking-tight text-neutral-900 lowercase pl-1">
+                contact files
+              </h1>
+            </section>
+          )}
 
-          {!compactHeader && (
+          {!compactHeader && !showHomeHero && (
             <div
               className="folder-files-hero-reserve app-inline-pad"
               data-purpose="folder-files-hero-reserve"

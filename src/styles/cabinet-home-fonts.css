@@ -1,0 +1,15 @@
+@font-face {
+  font-family: 'Seriously Nostalgic Fine';
+  src: url('../assets/fonts/seriously-nostalgic-fine.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Seriously Nostalgic';
+  src: url('../assets/fonts/seriously-nostalgic-italic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}

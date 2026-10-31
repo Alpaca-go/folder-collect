@@ -5,12 +5,8 @@
 
 /* ── Home copy (reference layout — text outside cabinet raster) ── */
 .cabinet-home {
-  --cabinet-home-ink: #3a4238;
-  --cabinet-home-ink-muted: rgba(58, 66, 56, 0.72);
-  /* Resting home (drawer closed): nudge cabinet down without changing scale or drawer math */
-  --cabinet-home-cabinet-offset-y: 15px;
-  background-color: var(--color-app-bg);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  --cabinet-home-font-display: 'Seriously Nostalgic Fine', 'Times New Roman', serif;
+  --cabinet-home-font-italic: 'Seriously Nostalgic', 'Times New Roman', serif;
   overflow: hidden;
 }
 
@@ -20,10 +16,15 @@
   display: none;
 }
 
-.cabinet-home--exiting .cabinet-home-hero,
 .cabinet-home--exiting .cabinet-home-cta {
   opacity: 0;
   transition: opacity var(--cabinet-exit-duration) cubic-bezier(0.22, 0, 0.15, 1);
+}
+
+/* Keep hero copy visible through drawer exit + morph (until files view mounts). */
+.cabinet-home--folder-exit .cabinet-home-hero {
+  z-index: 600;
+  pointer-events: none;
 }
 
 .cabinet-home-hero {
@@ -36,68 +37,40 @@
   text-align: center;
   width: 100%;
   box-sizing: border-box;
-  margin-top: calc(-1 * var(--app-pad-top));
-  padding-top: calc(var(--app-pad-top) + clamp(16px, 4.5vh, 32px));
-  padding-bottom: clamp(10px, 2.5vh, 18px);
-  color: var(--cabinet-home-ink);
 }
 
 .cabinet-home-name {
-  margin: 0;
   max-width: 100%;
-  font-size: clamp(1.35rem, 5.2vw, 1.75rem);
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  line-height: 1.35;
-  padding-inline: 0.2em;
+  font-family: var(--cabinet-home-font-display);
+  text-transform: none;
 }
 
 .cabinet-home-role {
-  margin: 0.65rem 0 0;
   max-width: 100%;
-  font-size: clamp(0.72rem, 2.8vw, 0.8125rem);
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  line-height: 1.45;
-  color: var(--cabinet-home-ink-muted);
 }
 
 .cabinet-home-divider {
-  width: clamp(36px, 12vw, 52px);
-  height: 1px;
-  margin: clamp(14px, 3.5vh, 22px) auto clamp(12px, 2.8vh, 18px);
-  background: rgba(58, 66, 56, 0.35);
+  flex-shrink: 0;
 }
 
 .cabinet-home-works {
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: 100%;
-  font-size: clamp(0.625rem, 2.4vw, 0.6875rem);
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  line-height: 1.45;
-  padding-inline: 0.2em;
-  text-transform: uppercase;
+  font-family: var(--cabinet-home-font-display);
+  padding-inline: 0;
 }
 
 .cabinet-home-years {
-  margin: 0.45rem 0 0;
-  font-size: clamp(0.625rem, 2.4vw, 0.6875rem);
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  color: var(--cabinet-home-ink-muted);
+  max-width: 100%;
+  font-family: var(--cabinet-home-font-display);
 }
 
 .cabinet-home-stage {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  min-height: 0;
-  container-type: size;
-  container-name: cabinet-home-stage;
 }
 
 .cabinet-home-stage--hidden {
@@ -115,7 +88,6 @@
   );
   max-height: 100cqh;
   max-width: 100%;
-  transform: translateY(var(--cabinet-home-cabinet-offset-y));
 }
 
 .cabinet-home .cabinet-diagram-wrap--raster {
@@ -139,28 +111,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  padding-top: clamp(6px, 1.5vh, 12px);
-  padding-bottom: clamp(4px, 1vh, 10px);
-  color: var(--cabinet-home-ink-muted);
   pointer-events: none;
 }
 
 .cabinet-home-open {
   margin: 0;
   max-width: 100%;
-  font-size: clamp(0.625rem, 2.4vw, 0.6875rem);
-  font-weight: 500;
-  letter-spacing: 0.34em;
-  line-height: 1.45;
-  padding-inline: 0.2em;
+  font-family: var(--cabinet-home-font-display);
+  padding-inline: 0;
   text-transform: uppercase;
-}
-
-.cabinet-home-open-arrow {
-  font-size: clamp(0.875rem, 3.2vw, 1rem);
-  line-height: 1;
-  opacity: 0.85;
 }
 
 /* ── Scene wrapper (2D orthographic) ── */

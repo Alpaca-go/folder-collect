@@ -1,5 +1,6 @@
 import cabinetBackgroundUrl from '../../assets/cabinet-background.png'
 import CabinetBox from './CabinetBox'
+import CabinetHomeHero from './CabinetHomeHero'
 
 interface CabinetHomeProps {
   onOpenFiles: () => void
@@ -10,6 +11,8 @@ interface CabinetHomeProps {
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
   cabinetStageHidden?: boolean
+  /** Folder exit morph: keep hero visible above overlay until stack page. */
+  folderExitActive?: boolean
 }
 
 export default function CabinetHome({
@@ -21,22 +24,17 @@ export default function CabinetHome({
   drawerFoldersHidden,
   onCabinetExitComplete,
   cabinetStageHidden = false,
+  folderExitActive = false,
 }: CabinetHomeProps) {
   return (
     <div
-      className={`cabinet-home relative grid h-full min-h-0 w-full flex-1 bg-appBg pb-[var(--app-pad-bottom)] pt-[var(--app-pad-top)]${cabinetExiting || foldersMorphing ? ' cabinet-home--exiting' : ''}`}
+      className={`cabinet-home relative h-full min-h-0 w-full flex-1${cabinetExiting || foldersMorphing ? ' cabinet-home--exiting' : ''}${folderExitActive ? ' cabinet-home--folder-exit' : ''}`}
     >
       <div className="app-cabinet-backdrop" aria-hidden>
         <img src={cabinetBackgroundUrl} alt="" draggable={false} />
       </div>
 
-      <header className="cabinet-home-hero app-inline-pad" aria-label="Portfolio introduction">
-        <h1 className="cabinet-home-name">WANG QI</h1>
-        <p className="cabinet-home-role">Visual Designer / Illustrator</p>
-        <div className="cabinet-home-divider" aria-hidden="true" />
-        <p className="cabinet-home-works">SELECTED WORKS</p>
-        <p className="cabinet-home-years">2023 — 2026</p>
-      </header>
+      <CabinetHomeHero />
 
       <div
         className={`cabinet-home-stage min-h-0${cabinetStageHidden ? ' cabinet-home-stage--hidden' : ''}`}

@@ -24,10 +24,12 @@ export default function App() {
   const [inFilesView, setInFilesView] = useState(false)
   const [folderExit, setFolderExit] = useState<FolderExitSession | null>(null)
   const [listRevealCount, setListRevealCount] = useState<number | null>(null)
+  const [showStackHomeHero, setShowStackHomeHero] = useState(false)
 
   const handleOpenFiles = useCallback(() => {
     setFolderExit(null)
     setListRevealCount(null)
+    setShowStackHomeHero(false)
     setInFilesView(true)
   }, [])
 
@@ -57,6 +59,7 @@ export default function App() {
     setListRevealCount((count) =>
       count === null ? MORPH_FOLDER_COUNT + TAIL_REVEAL_BATCH : count,
     )
+    setShowStackHomeHero(true)
     setInFilesView(true)
     requestAnimationFrame(() => {
       setFolderExit(null)
@@ -66,6 +69,7 @@ export default function App() {
   const handleBackToCabinet = useCallback(() => {
     setFolderExit(null)
     setListRevealCount(null)
+    setShowStackHomeHero(false)
     setInFilesView(false)
   }, [])
 
@@ -103,10 +107,11 @@ export default function App() {
             drawerFoldersHidden={showMorphOverlay}
             onCabinetExitComplete={handleCabinetExitComplete}
             cabinetStageHidden={folderExit?.phase === 'morph'}
+            folderExitActive={folderExitActive}
           />
           {folderExitActive && (
             <div className="folder-stack-measure" aria-hidden="true">
-              <PhoneFrame onBack={() => {}} measureOnly />
+              <PhoneFrame onBack={() => {}} measureOnly showHomeHero />
             </div>
           )}
         </div>
@@ -118,6 +123,7 @@ export default function App() {
             onBack={handleBackToCabinet}
             listRevealCount={listRevealCount}
             listRevealActive={listRevealActive}
+            showHomeHero={showStackHomeHero}
           />
         </div>
       )}

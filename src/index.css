@@ -1,5 +1,7 @@
 @import './styles/theme.css';
 @import './styles/responsive.css';
+@import './styles/cabinet-home-fonts.css';
+@import './styles/cabinet-home-typography.css';
 
 @tailwind base;
 @tailwind components;

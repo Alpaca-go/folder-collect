@@ -10,6 +10,7 @@ interface PhoneFrameProps {
   listRevealCount?: number | null
   listRevealActive?: boolean
   compactHeader?: boolean
+  showHomeHero?: boolean
 }
 
 export default function PhoneFrame({
@@ -21,6 +22,7 @@ export default function PhoneFrame({
   listRevealCount = null,
   listRevealActive = false,
   compactHeader = false,
+  showHomeHero = false,
 }: PhoneFrameProps) {
   return (
     <div
@@ -42,6 +44,7 @@ export default function PhoneFrame({
         listRevealCount={listRevealCount}
         listRevealActive={listRevealActive}
         compactHeader={compactHeader}
+        showHomeHero={showHomeHero}
       />
       </div>
     </div>

@@ -60,6 +60,10 @@ type DragTarget =
 function resolveDragTarget(event: React.PointerEvent<HTMLElement>): DragTarget | null {
   const target = event.target as HTMLElement
 
+  if (target.closest('[data-purpose="cabinet-back"]')) {
+    return null
+  }
+
   const folderEl = target.closest<HTMLElement>('[data-folder-index]')
   if (folderEl) {
     const focusIndex = Number(folderEl.dataset.folderIndex)

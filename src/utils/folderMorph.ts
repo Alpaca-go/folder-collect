@@ -16,6 +16,8 @@ export const FOLDER_CENTER_GATHER_SIZE_MULT = FOLDER_CENTER_GATHER_SIZE_MULT_MAX
 
 const GATHER_VIEWPORT_PAD_X = 16
 const GATHER_VIEWPORT_PAD_Y = 20
+/** Bias gathered pile downward so it clears the home hero / years line. */
+const GATHER_CENTER_OFFSET_Y = 44
 /**
  * Idle hold after gather animation has finished (not the gather duration itself).
  * Used in DrawerFolderMorphOverlay after runFolderCenterGatherProgress completes.
@@ -116,7 +118,7 @@ export function folderLayoutsFromRects(
 export function computeViewportGatherShift(targets: FolderLayoutSnapshot[]) {
   const cluster = folderClusterCenter(targets)
   const { x: midX, y: midY } = viewportCenter()
-  return { dx: midX - cluster.x, dy: midY - cluster.y }
+  return { dx: midX - cluster.x, dy: midY - cluster.y + GATHER_CENTER_OFFSET_Y }
 }
 
 export function folderClusterBounds(targets: FolderLayoutSnapshot[]) {
