@@ -115,6 +115,8 @@ body {
   --folder-files-width-scale: 0.95;
   --folder-files-hero-min-h: clamp(235px, 26dvh, 38%);
   --folder-files-stack-offset-top: clamp(8px, 2dvh, 20px);
+  --cabinet-home-artboard-w: 472;
+  --ch-unit: calc(min(100vw, 472px) / var(--cabinet-home-artboard-w));
   width: calc(100% * var(--folder-files-width-scale));
   max-width: calc(100% * var(--folder-files-width-scale));
   margin-inline: auto;

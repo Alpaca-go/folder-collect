@@ -7,6 +7,7 @@ import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
 import CabinetHomeHero from './cabinet/CabinetHomeHero'
+import BackToCabinetButton from './cabinet/BackToCabinetButton'
 
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
@@ -210,19 +211,15 @@ export default function ContactList({
               data-purpose="title-slot"
               aria-hidden={hideContent}
             >
-              <button
-                type="button"
+              <BackToCabinetButton
                 onClick={(e) => {
                   e.stopPropagation()
                   onBack()
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
                 disabled={isOverlayOpen}
-                className="cabinet-home-back"
                 data-purpose="cabinet-back"
-              >
-                ← back to cabinet
-              </button>
+              />
               <CabinetHomeHero inlinePad={false} />
             </section>
           ) : (
@@ -233,14 +230,11 @@ export default function ContactList({
               data-purpose="title-slot"
               aria-hidden={hideContent}
             >
-              <button
-                type="button"
+              <BackToCabinetButton
                 onClick={onBack}
                 disabled={isOverlayOpen}
-                className="mb-3 min-h-[44px] border-0 bg-transparent p-0 text-[clamp(11px,3.2vw,13px)] text-neutral-600/80 lowercase cursor-pointer hover:text-neutral-800 disabled:opacity-30 disabled:cursor-default touch-manipulation"
-              >
-                ← back to cabinet
-              </button>
+                className="cabinet-home-back--inline"
+              />
               <h1 className="text-[clamp(15px,4.5vw,18px)] font-normal tracking-tight text-neutral-900 lowercase pl-1">
                 contact files
               </h1>

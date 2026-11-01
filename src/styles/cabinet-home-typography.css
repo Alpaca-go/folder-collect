@@ -9,6 +9,7 @@
   --cabinet-home-ink: #5b5247;
   --cabinet-home-ink-muted: #6f655c;
   --cabinet-home-block-lift: calc(var(--ch-unit) * 40);
+  --cabinet-home-upper-drop: calc(var(--ch-unit) * 8);
 
   display: flex;
   flex-direction: column;
@@ -23,7 +24,7 @@
 .cabinet-home-hero {
   flex: 0 0 auto;
   margin-top: calc(-1 * var(--app-pad-top));
-  padding-top: calc(var(--app-pad-top) + var(--ch-unit) * 52);
+  padding-top: calc(var(--app-pad-top) + var(--ch-unit) * 52 + var(--cabinet-home-upper-drop, 0px));
   padding-bottom: 0;
   font-family: var(--cabinet-home-font-display);
   color: var(--cabinet-home-ink);
@@ -103,6 +104,7 @@
   --cabinet-home-ink-muted: #6f655c;
   --cabinet-home-font-display: 'Seriously Nostalgic Fine', 'Times New Roman', serif;
   --cabinet-home-font-italic: 'Seriously Nostalgic', 'Times New Roman', serif;
+  --cabinet-home-upper-drop: calc(var(--ch-unit) * 8);
   width: 100%;
   max-width: 472px;
   margin-inline: auto;
@@ -117,27 +119,30 @@
 
 .cabinet-home-hero-region .cabinet-home-hero {
   margin-top: calc(-1 * var(--app-pad-top));
-  padding-top: calc(var(--app-pad-top) + var(--ch-unit) * 52);
+  padding-top: calc(var(--app-pad-top) + var(--ch-unit) * 52 + var(--cabinet-home-upper-drop, 0px));
   padding-bottom: 0;
   pointer-events: none;
 }
 
 .cabinet-home-back {
   position: absolute;
-  top: calc(var(--app-pad-top) + var(--ch-unit) * 10);
+  top: calc(var(--app-pad-top) + var(--ch-unit) * 18 + var(--cabinet-home-upper-drop, 0px));
   left: var(--app-header-pad-x);
   z-index: 20;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: calc(var(--ch-unit) * 3);
   pointer-events: auto;
   min-height: 44px;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
-  font-family: var(--cabinet-home-font-display);
+  font-family: var(--cabinet-home-font-cta, 'Zona Pro', system-ui, sans-serif);
   font-size: calc(var(--ch-unit) * 11);
   font-weight: 400;
   letter-spacing: calc(var(--ch-unit) * 0.8);
-  line-height: calc(var(--ch-unit) * 14);
+  line-height: 1;
   color: #a69b8c;
   text-transform: lowercase;
   cursor: pointer;
@@ -145,6 +150,28 @@
   opacity: 0;
   animation: cabinet-home-back-fade-in 280ms cubic-bezier(0.22, 0, 0.15, 1) forwards;
   animation-delay: 60ms;
+}
+
+.cabinet-home-back-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 0.85em;
+  height: 0.85em;
+  color: currentColor;
+}
+
+.cabinet-home-back-label {
+  display: block;
+  color: currentColor;
+  line-height: 1;
+}
+
+.cabinet-home-back--inline {
+  position: static;
+  margin-top: calc(var(--ch-unit) * 8);
+  margin-bottom: calc(var(--ch-unit, 1px) * 12);
+  opacity: 1;
+  animation: none;
 }
 
 @keyframes cabinet-home-back-fade-in {
