@@ -7,6 +7,7 @@
 .cabinet-home {
   --cabinet-home-font-display: 'Seriously Nostalgic Fine', 'Times New Roman', serif;
   --cabinet-home-font-italic: 'Seriously Nostalgic', 'Times New Roman', serif;
+  --cabinet-home-font-cta: 'Zona Pro', system-ui, sans-serif;
   overflow: hidden;
 }
 
@@ -65,6 +66,8 @@
 .cabinet-home-years {
   max-width: 100%;
   font-family: var(--cabinet-home-font-display);
+  position: relative;
+  z-index: 3;
 }
 
 .cabinet-home-stage {
@@ -114,12 +117,34 @@
   pointer-events: none;
 }
 
+.cabinet-home-cta--on-door {
+  position: absolute;
+  left: 50%;
+  z-index: 3.5;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-inline: 0;
+  top: calc(var(--cabinet-door-cta-top-pct, 90) * 1% - var(--ch-unit) * 16);
+  width: max-content;
+  max-width: none;
+  gap: calc(var(--ch-unit) * 3);
+  line-height: normal;
+  color: var(--cabinet-home-ink-muted, #6f655c);
+  will-change: transform;
+}
+
+.cabinet-raster-stage .cabinet-home-cta--on-door .cabinet-home-open {
+  line-height: calc(var(--ch-unit) * 13);
+}
+
 .cabinet-home-open {
   margin: 0;
   max-width: 100%;
-  font-family: var(--cabinet-home-font-display);
+  font-family: var(--cabinet-home-font-cta);
   padding-inline: 0;
   text-transform: uppercase;
+  text-align: center;
 }
 
 /* ── Scene wrapper (2D orthographic) ── */
@@ -173,6 +198,7 @@
   width: 100%;
   aspect-ratio: var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271);
   line-height: 0;
+  overflow: visible;
 }
 
 .cabinet-raster-layer {
@@ -289,7 +315,6 @@
 }
 
 .cabinet-diagram-wrap.folders-morphing {
-  opacity: 0;
   pointer-events: none;
 }
 

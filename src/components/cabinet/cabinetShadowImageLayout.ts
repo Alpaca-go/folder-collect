@@ -8,7 +8,7 @@
  * exported `cabinetImageLayout` front @ (-2, 1650) — comp Y differs by 46px in PSD.
  * Cabinet raster layers in `cabinetImageLayout.ts` are unchanged.
  */
-import { PSD_LAYERS } from './cabinetImageLayout'
+import { PSD_DOC, PSD_LAYERS } from './cabinetImageLayout'
 
 export const SHADOW_PSD_DOC = { w: 2365, h: 4202 } as const
 
@@ -57,3 +57,11 @@ export const CABINET_SHADOW_LAYERS = {
 } as const
 
 export type CabinetShadowLayerRect = (typeof CABINET_SHADOW_LAYERS)[keyof typeof CABINET_SHADOW_LAYERS]
+
+/** “OPEN DRAWER” — doc Y on drawer-front-shadow, just below exported front lip. */
+export function drawerFrontCtaTopPct() {
+  const doorBottomY = PSD_LAYERS.front.y + PSD_LAYERS.front.h
+  const shadow = CABINET_SHADOW_LAYERS.drawerFrontShadow
+  const targetY = Math.max(doorBottomY + 20, shadow.y + shadow.h * 0.22)
+  return (targetY / PSD_DOC.h) * 100
+}

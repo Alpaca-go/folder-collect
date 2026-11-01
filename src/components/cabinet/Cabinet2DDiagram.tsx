@@ -20,7 +20,7 @@ import {
   toPoly,
 } from './cabinet2Layout'
 import { PSD_DOC, PSD_LAYERS } from './cabinetImageLayout'
-import { CABINET_SHADOW_LAYERS } from './cabinetShadowImageLayout'
+import { CABINET_SHADOW_LAYERS, drawerFrontCtaTopPct } from './cabinetShadowImageLayout'
 import cabinetBackgroundUrl from '../../assets/cabinet-background.png'
 import cabinetStaticShadowUrl from '../../assets/cabinet-static-shadow.png'
 import cabinetStaticShadow2Url from '../../assets/cabinet-static-shadow-2.png'
@@ -29,6 +29,7 @@ import cabinetStaticUrl from '../../assets/cabinet-static.png'
 import drawerInteriorUrl from '../../assets/drawer-interior.png'
 import drawerFrontUrl from '../../assets/drawer-front.png'
 import DrawerFolderStack from './DrawerFolderStack'
+import CabinetDoorCta from './CabinetDoorCta'
 import { CABINET_EXIT_DURATION_MS, CABINET_EXIT_EASE } from '../../utils/folderMorph'
 import './cabinet.css'
 
@@ -216,7 +217,10 @@ export default function Cabinet2DDiagram({
       initial={false}
       animate={{ opacity: cabinetRasterHidden ? 0 : 1 }}
       transition={{
-        duration: cabinetExiting ? CABINET_EXIT_DURATION_MS / 1000 : 0,
+        duration:
+          cabinetExiting || cabinetRasterHidden
+            ? CABINET_EXIT_DURATION_MS / 1000
+            : 0,
         ease: CABINET_EXIT_EASE,
       }}
       onAnimationComplete={() => {
@@ -366,6 +370,18 @@ export default function Cabinet2DDiagram({
           >
             <img src={drawerFrontShadowUrl} alt="" draggable={false} />
           </div>
+        </div>
+
+        <div
+          className="cabinet-home-cta cabinet-home-cta--on-door"
+          style={
+            {
+              '--cabinet-door-cta-top-pct': String(drawerFrontCtaTopPct()),
+              transform: `translateX(-50%) translateY(${doorTranslatePx}px)`,
+            } as CSSProperties
+          }
+        >
+          <CabinetDoorCta doorOpen={doorOpen} />
         </div>
 
         <div className="cabinet-drawer-motion cabinet-drawer-motion--front" style={doorMotionStyle}>

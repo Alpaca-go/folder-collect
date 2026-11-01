@@ -49,11 +49,6 @@ export default function CabinetHome({
           onCabinetExitComplete={onCabinetExitComplete}
         />
       </div>
-
-      <footer className="cabinet-home-cta app-inline-pad">
-        <p className="cabinet-home-open">OPEN DRAWER</p>
-        <span className="cabinet-home-open-arrow">↓</span>
-      </footer>
     </div>
   )
 }

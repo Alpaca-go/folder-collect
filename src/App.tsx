@@ -103,7 +103,7 @@ export default function App() {
             onFolderClick={handleFolderClick}
             cabinetExiting={folderExit?.phase === 'cabinet-exit'}
             cabinetRasterHidden={folderExitActive}
-            foldersMorphing={folderExitActive}
+            foldersMorphing={isMorphing}
             drawerFoldersHidden={showMorphOverlay}
             onCabinetExitComplete={handleCabinetExitComplete}
             cabinetStageHidden={folderExit?.phase === 'morph'}
