@@ -8,6 +8,8 @@ interface CabinetBoxProps {
   foldersMorphing?: boolean
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
+  onCabinetDoorChange?: (willOpen: boolean) => void
+  onCabinetDoorFullyClosed?: () => void
 }
 
 export default function CabinetBox({
@@ -18,6 +20,8 @@ export default function CabinetBox({
   foldersMorphing,
   drawerFoldersHidden,
   onCabinetExitComplete,
+  onCabinetDoorChange,
+  onCabinetDoorFullyClosed,
 }: CabinetBoxProps) {
   return (
     <div className="cabinet-scene" data-purpose="cabinet-scene">
@@ -29,6 +33,8 @@ export default function CabinetBox({
         foldersMorphing={foldersMorphing}
         drawerFoldersHidden={drawerFoldersHidden}
         onCabinetExitComplete={onCabinetExitComplete}
+        onCabinetDoorChange={onCabinetDoorChange}
+        onCabinetDoorFullyClosed={onCabinetDoorFullyClosed}
       />
     </div>
   )

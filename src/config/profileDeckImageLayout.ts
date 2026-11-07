@@ -24,3 +24,12 @@ export const PROFILE_DECK_LAYER_ORDER = [
 
 export const PROFILE_DECK_ASPECT_RATIO =
   `${PROFILE_DECK_PSD_DOC.w} / ${PROFILE_DECK_PSD_DOC.h}` as const
+
+/** Bottom-left of `folder-bottom` — stage rotate pivot (PSD %). */
+export const PROFILE_DECK_FOLDER_BOTTOM_ORIGIN = {
+  xPct: (PROFILE_DECK_LAYERS.folderBottom.x / PROFILE_DECK_PSD_DOC.w) * 100,
+  yPct:
+    ((PROFILE_DECK_LAYERS.folderBottom.y + PROFILE_DECK_LAYERS.folderBottom.h) /
+      PROFILE_DECK_PSD_DOC.h) *
+    100,
+} as const

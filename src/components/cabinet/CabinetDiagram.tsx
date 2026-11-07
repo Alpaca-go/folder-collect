@@ -8,6 +8,8 @@ interface CabinetDiagramProps {
   foldersMorphing?: boolean
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
+  onCabinetDoorChange?: (willOpen: boolean) => void
+  onCabinetDoorFullyClosed?: () => void
 }
 
 export default function CabinetDiagram({
@@ -18,6 +20,8 @@ export default function CabinetDiagram({
   foldersMorphing,
   drawerFoldersHidden,
   onCabinetExitComplete,
+  onCabinetDoorChange,
+  onCabinetDoorFullyClosed,
 }: CabinetDiagramProps) {
   return (
     <Cabinet2DDiagram
@@ -28,6 +32,8 @@ export default function CabinetDiagram({
       foldersMorphing={foldersMorphing}
       drawerFoldersHidden={drawerFoldersHidden}
       onCabinetExitComplete={onCabinetExitComplete}
+      onCabinetDoorChange={onCabinetDoorChange}
+      onCabinetDoorFullyClosed={onCabinetDoorFullyClosed}
     />
   )
 }

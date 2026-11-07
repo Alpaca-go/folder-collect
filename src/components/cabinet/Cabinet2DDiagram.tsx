@@ -110,6 +110,8 @@ interface Cabinet2DDiagramProps {
   foldersMorphing?: boolean
   drawerFoldersHidden?: boolean
   onCabinetExitComplete?: () => void
+  onCabinetDoorChange?: (willOpen: boolean) => void
+  onCabinetDoorFullyClosed?: () => void
 }
 
 export default function Cabinet2DDiagram({
@@ -120,10 +122,13 @@ export default function Cabinet2DDiagram({
   foldersMorphing = false,
   drawerFoldersHidden = false,
   onCabinetExitComplete,
+  onCabinetDoorChange,
+  onCabinetDoorFullyClosed,
 }: Cabinet2DDiagramProps) {
   const stageRef = useRef<HTMLDivElement>(null)
   const [doorOpen, setDoorOpen] = useState(false)
   const [foldersSettled, setFoldersSettled] = useState(true)
+  const doorWasFullyClosedRef = useRef(true)
 
   const toggleDoor = () => {
     setDoorOpen((prev) => {
@@ -172,6 +177,7 @@ export default function Cabinet2DDiagram({
   const handleDoorClick = (event: MouseEvent<SVGGElement>) => {
     if (cabinetExiting) return
     event.stopPropagation()
+    onCabinetDoorChange?.(!doorOpen)
     toggleDoor()
   }
 
@@ -184,6 +190,7 @@ export default function Cabinet2DDiagram({
   const handleDoorKeyDown = (event: KeyboardEvent<SVGGElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
+      onCabinetDoorChange?.(!doorOpen)
       toggleDoor()
     }
   }
@@ -197,6 +204,16 @@ export default function Cabinet2DDiagram({
   }
 
   const exitCompleteSentRef = useRef(false)
+
+  const doorFullyClosed =
+    !doorOpen && foldersSettled && doorPull < 0.02
+
+  useEffect(() => {
+    if (doorFullyClosed && !doorWasFullyClosedRef.current) {
+      onCabinetDoorFullyClosed?.()
+    }
+    doorWasFullyClosedRef.current = doorFullyClosed
+  }, [doorFullyClosed, onCabinetDoorFullyClosed])
 
   useEffect(() => {
     if (!cabinetRasterHidden) {
