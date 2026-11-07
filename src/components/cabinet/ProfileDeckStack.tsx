@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import folderBottomUrl from '../../assets/folder-bottom.png'
 import innerCard01Url from '../../assets/inner-card-01.png'
 import innerCard02Url from '../../assets/inner-card-02.png'
@@ -18,10 +18,7 @@ const LAYER_SRC: Record<(typeof PROFILE_DECK_LAYER_ORDER)[number], string> = {
   folderFace: folderFaceUrl,
 }
 
-const LAYER_TILT_MINUS_2 = new Set<(typeof PROFILE_DECK_LAYER_ORDER)[number]>([
-  'folderBottom',
-  'folderFace',
-])
+const LAYER_TILT_MINUS_2 = new Set<(typeof PROFILE_DECK_LAYER_ORDER)[number]>(['folderBottom'])
 
 const LAYER_TILT_MINUS_1 = new Set<(typeof PROFILE_DECK_LAYER_ORDER)[number]>(['innerCard01'])
 
@@ -41,6 +38,12 @@ const INNER_CARD_KEYS = new Set<(typeof PROFILE_DECK_LAYER_ORDER)[number]>([
   'innerCard02',
 ])
 
+/** Snap shut, then pause, then dive — sync with cabinet.css face-close vars. */
+const PROFILE_DECK_FACE_CLOSE_DURATION_MS = 300
+const PROFILE_DECK_FACE_CLOSE_PAUSE_MS = 280
+const PROFILE_DECK_FACE_CLOSE_BEFORE_DOCK_MS =
+  PROFILE_DECK_FACE_CLOSE_DURATION_MS + PROFILE_DECK_FACE_CLOSE_PAUSE_MS
+
 interface ProfileDeckStackProps {
   docked?: boolean
   onUndock?: () => void
@@ -48,6 +51,37 @@ interface ProfileDeckStackProps {
 
 export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDeckStackProps) {
   const { w: docW, h: docH } = PROFILE_DECK_PSD_DOC
+  const [folderFaceOpen, setFolderFaceOpen] = useState(!docked)
+  const [motionDocked, setMotionDocked] = useState(docked)
+  const [faceClosingForDock, setFaceClosingForDock] = useState(false)
+  const prevDockedRef = useRef(docked)
+
+  useEffect(() => {
+    const wasDocked = prevDockedRef.current
+    prevDockedRef.current = docked
+
+    if (!docked) {
+      setMotionDocked(false)
+      setFolderFaceOpen(true)
+      setFaceClosingForDock(false)
+      return
+    }
+
+    setFolderFaceOpen(false)
+
+    if (!wasDocked) {
+      setFaceClosingForDock(true)
+      setMotionDocked(false)
+      const id = window.setTimeout(() => {
+        setMotionDocked(true)
+        setFaceClosingForDock(false)
+      }, PROFILE_DECK_FACE_CLOSE_BEFORE_DOCK_MS)
+      return () => window.clearTimeout(id)
+    }
+
+    setMotionDocked(true)
+    setFaceClosingForDock(false)
+  }, [docked])
 
   return (
     <div
@@ -63,42 +97,61 @@ export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDe
       aria-hidden={!docked}
     >
       <div
-        className={`profile-deck-motion${docked ? ' profile-deck-motion--docked' : ''}`}
+        className={`profile-deck-motion${motionDocked ? ' profile-deck-motion--docked' : ''}`}
       >
         <div
-          className={`profile-deck-stage${docked ? ' profile-deck-stage--docked' : ''}`}
+          className={`profile-deck-stage${motionDocked ? ' profile-deck-stage--docked' : ''}${folderFaceOpen ? ' profile-deck-stage--folder-face-open' : ''}${faceClosingForDock ? ' profile-deck-stage--folder-face-closing' : ''}`}
           onPointerDown={(event) => {
-            if (!docked) event.stopPropagation()
+            if (!motionDocked) event.stopPropagation()
           }}
         >
           {PROFILE_DECK_LAYER_ORDER.map((key, index) => {
-          const isInnerCard = INNER_CARD_KEYS.has(key)
-          return (
-            <img
-              key={key}
-              src={LAYER_SRC[key]}
-              alt=""
-              draggable={false}
-              className={`profile-deck-layer${LAYER_TILT_MINUS_2.has(key) ? ' profile-deck-layer--tilt-minus-2' : ''}${LAYER_TILT_MINUS_1.has(key) ? ' profile-deck-layer--tilt-minus-1' : ''}${LAYER_TILT_PLUS_1.has(key) ? ' profile-deck-layer--tilt-plus-1' : ''}${isInnerCard ? ' profile-deck-layer--inner-card' : ''}`}
-              style={{
-                ...layerCssVars(PROFILE_DECK_LAYERS[key]),
-                zIndex: index + 1,
-              }}
-              role={docked && isInnerCard ? 'button' : undefined}
-              tabIndex={docked && isInnerCard ? 0 : undefined}
-              aria-label={docked && isInnerCard ? 'Expand profile folder' : undefined}
-              onClick={() => {
-                if (docked && isInnerCard) onUndock?.()
-              }}
-              onKeyDown={(event) => {
-                if (!docked || !isInnerCard) return
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  onUndock?.()
-                }
-              }}
-            />
-          )
+            const isInnerCard = INNER_CARD_KEYS.has(key)
+            const layerStyle = {
+              ...layerCssVars(PROFILE_DECK_LAYERS[key]),
+              zIndex: index + 1,
+            }
+
+            if (key === 'folderFace') {
+              return (
+                <div
+                  key={key}
+                  className="profile-deck-layer profile-deck-layer--tilt-minus-2 profile-deck-layer--folder-face-slot"
+                  style={layerStyle}
+                >
+                  <img
+                    src={LAYER_SRC.folderFace}
+                    alt=""
+                    draggable={false}
+                    className={`profile-deck-layer__raster profile-deck-layer--folder-face${folderFaceOpen ? ' profile-deck-layer--folder-face--open' : ''}`}
+                  />
+                </div>
+              )
+            }
+
+            return (
+              <img
+                key={key}
+                src={LAYER_SRC[key]}
+                alt=""
+                draggable={false}
+                className={`profile-deck-layer${LAYER_TILT_MINUS_2.has(key) ? ' profile-deck-layer--tilt-minus-2' : ''}${LAYER_TILT_MINUS_1.has(key) ? ' profile-deck-layer--tilt-minus-1' : ''}${LAYER_TILT_PLUS_1.has(key) ? ' profile-deck-layer--tilt-plus-1' : ''}${isInnerCard ? ' profile-deck-layer--inner-card' : ''}`}
+                style={layerStyle}
+                role={motionDocked && isInnerCard ? 'button' : undefined}
+                tabIndex={motionDocked && isInnerCard ? 0 : undefined}
+                aria-label={motionDocked && isInnerCard ? 'Expand profile folder' : undefined}
+                onClick={() => {
+                  if (motionDocked && isInnerCard) onUndock?.()
+                }}
+                onKeyDown={(event) => {
+                  if (!motionDocked || !isInnerCard) return
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onUndock?.()
+                  }
+                }}
+              />
+            )
           })}
         </div>
       </div>

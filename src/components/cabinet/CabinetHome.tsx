@@ -37,7 +37,7 @@ export default function CabinetHome({
     !cabinetStageHidden &&
     !foldersMorphing
 
-  const [profileDeckDocked, setProfileDeckDocked] = useState(false)
+  const [profileDeckDocked, setProfileDeckDocked] = useState(true)
   const [profileDeckExiting, setProfileDeckExiting] = useState(false)
   const [profileDeckHidden, setProfileDeckHidden] = useState(false)
   const [profileDeckEntering, setProfileDeckEntering] = useState(false)
@@ -48,12 +48,13 @@ export default function CabinetHome({
 
   useEffect(() => {
     if (!showProfileDeck) {
-      setProfileDeckDocked(false)
       setProfileDeckExiting(false)
       setProfileDeckHidden(false)
       setProfileDeckEntering(false)
       profileDeckDismissedByDoorRef.current = false
+      return
     }
+    setProfileDeckDocked(true)
   }, [showProfileDeck])
 
   useEffect(() => {
