@@ -208,13 +208,18 @@
 .cabinet-home-stage {
   flex: 1 1 auto;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   min-height: 0;
   margin-top: calc(-1 * var(--cabinet-home-block-lift, 0px));
   padding-top: calc(var(--ch-unit) * 20);
   container-type: size;
   container-name: cabinet-home-stage;
+}
+
+.cabinet-home--profile-deck .cabinet-home-stage {
+  padding-top: calc(var(--ch-unit) * 8);
 }
 
 .cabinet-home .cabinet-diagram-wrap {
