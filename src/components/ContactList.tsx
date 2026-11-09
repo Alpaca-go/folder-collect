@@ -45,12 +45,15 @@ export default function ContactList({
   showHomeHero = false,
 }: ContactListProps) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  /** Drives close animation after activeId clears so scroll/taps unlock while the folder animates shut. */
+  const [closingId, setClosingId] = useState<string | null>(null)
   const [centerOffsetY, setCenterOffsetY] = useState(0)
   const [closePhase, setClosePhase] = useState<ClosePhase>(null)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
-  const elasticEnabled = !measureOnly && !activeId && !closePhase && !listRevealActive
+  const blockPageScroll = Boolean(activeId)
+  const elasticEnabled = !measureOnly && !activeId && !listRevealActive
   const stackContacts = measureOnly ? contacts.slice(0, MORPH_FOLDER_COUNT) : contacts
 
   const {
@@ -82,6 +85,8 @@ export default function ContactList({
     const returnEndMs = returnStartMs + RETURN_DURATION_MS
     const revealStartMs = returnEndMs - REVEAL_OVERLAP_MS
 
+    setClosingId(activeId)
+    setActiveId(null)
     setClosePhase('folding')
 
     closeTimersRef.current.push(
@@ -99,14 +104,21 @@ export default function ContactList({
 
     closeTimersRef.current.push(
       window.setTimeout(() => {
-        setActiveId(null)
+        setClosingId(null)
         setClosePhase(null)
       }, revealStartMs + totalRevealMs),
     )
   }
 
   const handleActivate = (id: string, element: HTMLElement) => {
-    if (activeId || closePhase) return
+    if (activeId) return
+
+    if (closePhase) {
+      clearCloseTimers()
+      setClosingId(null)
+      setClosePhase(null)
+      setCenterOffsetY(0)
+    }
 
     const container = scrollRef.current
     if (!container) return
@@ -120,10 +132,12 @@ export default function ContactList({
     setActiveId(id)
   }
 
-  const getMode = (id: string): FolderMode => {
-    if (!activeId) return 'default'
+  const focusedFolderId = activeId ?? closingId
 
-    if (id === activeId) {
+  const getMode = (id: string): FolderMode => {
+    if (!focusedFolderId) return 'default'
+
+    if (id === focusedFolderId) {
       if (closePhase === 'folding') return 'closing'
       if (closePhase === 'returning' || closePhase === 'revealing') return 'returning'
       return 'active'
@@ -133,7 +147,9 @@ export default function ContactList({
     return 'inactive'
   }
 
-  const activeIndex = activeId ? contacts.findIndex((contact) => contact.id === activeId) : -1
+  const activeIndex = focusedFolderId
+    ? contacts.findIndex((contact) => contact.id === focusedFolderId)
+    : -1
   const isOverlayOpen = Boolean(activeId)
   /** On close, siblings stay in stack slots (no dive) until reveal — avoids a second visible row. */
   const stackSiblingsCollapsed =
@@ -141,7 +157,7 @@ export default function ContactList({
 
   const hideStack = stackHidden && !measureOnly
   const hideContent = contentHidden || measureOnly
-  const useNativeScroll = !isOverlayOpen && !elasticEnabled
+  const useNativeScroll = !elasticEnabled
 
   /** Keep every folder in layout; only opacity changes to avoid stack jumping. */
   const getFolderPresentation = (index: number) => {
@@ -188,17 +204,17 @@ export default function ContactList({
         className={`relative h-full w-full no-scrollbar overscroll-contain pb-[var(--app-pad-bottom)] ${
           showHomeHero ? '' : 'pt-[var(--app-pad-top)]'
         } ${
-          isOverlayOpen
+          blockPageScroll
             ? 'overflow-y-hidden touch-pan-y'
             : useNativeScroll
               ? 'overflow-y-auto touch-pan-y'
               : 'overflow-y-auto touch-none'
         }`}
         data-purpose="files-scroll-container"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        onPointerDownCapture={onPointerDown}
+        onPointerMoveCapture={onPointerMove}
+        onPointerUpCapture={onPointerUp}
+        onPointerCancelCapture={onPointerUp}
       >
         <div
           className={`folder-files-layout${showHomeHero ? ' folder-files-layout--home-hero' : ''}`}
@@ -251,7 +267,7 @@ export default function ContactList({
 
           <div
             className={`relative z-[50] flex flex-col w-full folder-stack ${
-              isOverlayOpen ? 'pointer-events-none' : ''
+              isOverlayOpen && !closePhase ? 'pointer-events-none' : ''
             }${hideStack ? ' invisible' : ''}`}
             id="cards-stack"
             aria-hidden={hideStack}
@@ -287,14 +303,16 @@ export default function ContactList({
                 name={contact.name}
                 isLast={index === contacts.length - 1}
                 mode={getMode(contact.id)}
-                centerOffsetY={activeId === contact.id ? centerOffsetY : 0}
+                centerOffsetY={focusedFolderId === contact.id ? centerOffsetY : 0}
                 revealDelay={revealStep >= 0 ? revealStep * REVEAL_STAGGER_MS : 0}
                 elasticOffset={elasticOffsets[index]}
                 shouldSuppressActivate={suppressNextClick}
                 onActivate={(el) => handleActivate(contact.id, el)}
                 itemHidden={folderHidden}
                 itemEntering={folderEntering}
-                stackSiblingCollapsed={stackSiblingsCollapsed && contact.id !== activeId}
+                stackSiblingCollapsed={
+                  stackSiblingsCollapsed && contact.id !== focusedFolderId
+                }
               />
             )
           })}
@@ -302,12 +320,12 @@ export default function ContactList({
         </div>
       </main>
 
-      {isOverlayOpen && (
+      {isOverlayOpen && !closePhase && (
         <button
           type="button"
           aria-label="返回"
           className="absolute inset-0 z-[60] cursor-default border-0 bg-transparent p-0"
-          onClick={closePhase ? undefined : handleClose}
+          onClick={handleClose}
         />
       )}
     </div>

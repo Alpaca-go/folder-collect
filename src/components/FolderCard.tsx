@@ -51,8 +51,10 @@ export default function FolderCard({
   const stackFlipped = stackLayerHorizontallyFlipped(index)
   const stackScale =
     isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE
+  const canOpenFromStack = mode === 'default' || mode === 'revealing'
+
   const handleTap = () => {
-    if (rootRef.current && mode === 'default') onActivate(rootRef.current)
+    if (rootRef.current && canOpenFromStack) onActivate(rootRef.current)
   }
 
   return (
@@ -112,16 +114,11 @@ export default function FolderCard({
         transformPerspective: FOLDER_PERSPECTIVE,
         transformOrigin: '50% 0%',
         pointerEvents:
-          mode === 'inactive' ||
-          mode === 'closing' ||
-          mode === 'returning' ||
-          mode === 'revealing'
-            ? 'none'
-            : 'auto',
+          mode === 'inactive' || mode === 'closing' || mode === 'returning' ? 'none' : 'auto',
         aspectRatio: FOLDER_ASPECT_RATIO,
       }}
     >
-      {mode === 'default' && (
+      {canOpenFromStack && (
         <button
           type="button"
           aria-label={`Open ${name}`}

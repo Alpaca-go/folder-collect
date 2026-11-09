@@ -145,6 +145,7 @@ export function useElasticFolderStack({
       setDraggingVisual(false)
       resetOffsets()
       dragRef.current = createInitialDragState()
+      suppressClickRef.current = false
     }
   }, [cancelScheduledMove, enabled, resetOffsets, setDraggingVisual, stopAnimations])
 
