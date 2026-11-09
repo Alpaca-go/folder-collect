@@ -36,7 +36,60 @@ import './cabinet.css'
 const DOOR_OPEN_THRESHOLD = 0.65
 /** Start crossfading to open static shadow in the last segment of door travel. */
 const OPEN_STATIC_SHADOW_PULL_START = 0.2
-const STATIC_SHADOW_CROSSFADE_MS = 380
+/** Door closed: open shadow (static-shadow-2) → resting shadow (static-shadow). */
+const STATIC_SHADOW_CLOSE_CROSSFADE_MS = 620
+
+/** Quick response without a snap — gentle onset, slow settle. */
+function easeOutQuad(t: number) {
+  return 1 - (1 - t) * (1 - t)
+}
+
+function useStaticShadowMix(
+  doorOpen: boolean,
+  pullMix: number,
+  /** Door still up while folders sink — hold open shadow before crossfade. */
+  holdOpenShadowWhileClosing: boolean,
+) {
+  const [mix, setMix] = useState(0)
+  const mixRef = useRef(0)
+  const closeAnimRef = useRef(0)
+
+  useEffect(() => {
+    if (doorOpen) {
+      cancelAnimationFrame(closeAnimRef.current)
+      return
+    }
+
+    if (holdOpenShadowWhileClosing) {
+      cancelAnimationFrame(closeAnimRef.current)
+      mixRef.current = 1
+      setMix(1)
+      return
+    }
+
+    const from = mixRef.current > 0.001 ? mixRef.current : 1
+    const start = performance.now()
+
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / STATIC_SHADOW_CLOSE_CROSSFADE_MS, 1)
+      const next = from * (1 - easeOutQuad(t))
+      mixRef.current = next
+      setMix(next)
+      if (t < 1) closeAnimRef.current = requestAnimationFrame(tick)
+    }
+
+    closeAnimRef.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(closeAnimRef.current)
+  }, [doorOpen, holdOpenShadowWhileClosing])
+
+  useEffect(() => {
+    if (!doorOpen) return
+    mixRef.current = pullMix
+    setMix(pullMix)
+  }, [doorOpen, pullMix])
+
+  return mix
+}
 
 function layerStyle(rect: { x: number; y: number; w: number; h: number }): CSSProperties {
   const { w: docW, h: docH } = PSD_DOC
@@ -139,6 +192,7 @@ export default function Cabinet2DDiagram({
   }
 
   const doorPullTarget = doorOpen ? 1 : foldersSettled ? 0 : 1
+  const holdOpenShadowWhileClosing = !doorOpen && doorPullTarget > 0
   const doorPull = useAnimatedPull(doorPullTarget > 0)
   const doorY = doorOffsetY(doorPull)
   const doorTranslatePx = useDrawerTranslateY(stageRef, doorY)
@@ -154,17 +208,13 @@ export default function Cabinet2DDiagram({
       (doorPull - OPEN_STATIC_SHADOW_PULL_START) / (1 - OPEN_STATIC_SHADOW_PULL_START),
     ),
   )
-  /** Folders sink first while the door stays open; fade open shadow when the door starts closing. */
-  const foldersClosingBeforeDoor = !doorOpen && !foldersSettled
-  const doorClosing = !doorOpen && foldersSettled
-  const openStaticShadowMix = doorClosing
-    ? 0
-    : doorOpen || foldersClosingBeforeDoor
-      ? pullBasedOpenStaticShadowMix
-      : 0
-  const staticShadowCrossfade: CSSProperties = {
-    transition: `opacity ${STATIC_SHADOW_CROSSFADE_MS}ms cubic-bezier(0.22, 0, 0.15, 1)`,
-  }
+  const openStaticShadowMix = useStaticShadowMix(
+    doorOpen,
+    pullBasedOpenStaticShadowMix,
+    holdOpenShadowWhileClosing,
+  )
+  /** Mix is pull- / rAF-driven — CSS opacity transition here blinks the cabinet raster. */
+  const staticShadowCrossfade: CSSProperties = {}
 
   const doorMotionStyle: CSSProperties = {
     transform: `translateY(${doorTranslatePx}px)`,

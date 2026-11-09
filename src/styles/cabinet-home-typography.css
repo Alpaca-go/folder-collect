@@ -10,6 +10,7 @@
   --cabinet-home-ink-muted: #6f655c;
   --cabinet-home-block-lift: calc(var(--ch-unit) * 40);
   --cabinet-home-upper-drop: calc(var(--ch-unit) * 8);
+  --cabinet-home-diagram-scale: 0.90;
 
   display: flex;
   flex-direction: column;
@@ -219,7 +220,8 @@
 }
 
 .cabinet-home .cabinet-diagram-wrap {
-  transform: translateY(0);
+  transform: scale(var(--cabinet-home-diagram-scale, 1));
+  transform-origin: top center;
   max-height: calc(var(--ch-unit) * 300);
 }
 
@@ -426,6 +428,69 @@
   100% {
     opacity: 0;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 520px) {
+  .cabinet-home .cabinet-diagram-wrap {
+    /* Stable height while dvh shifts as the URL bar collapses (iOS/Android). */
+    --diagram-max-h: calc(var(--ch-unit) * 228);
+  }
+
+  .cabinet-home {
+    --cabinet-home-block-lift: calc(var(--ch-unit) * 14);
+    --cabinet-home-upper-drop: 0px;
+  }
+
+  .cabinet-home-hero,
+  .cabinet-home-hero-region .cabinet-home-hero {
+    padding-top: calc(var(--app-pad-top) + var(--ch-unit) * 34);
+    transform: scale(0.96);
+    transform-origin: top center;
+    margin-bottom: calc(var(--ch-unit) * -4);
+  }
+
+  .cabinet-home-name {
+    font-size: calc(var(--ch-unit) * 34);
+    line-height: calc(var(--ch-unit) * 38);
+  }
+
+  .cabinet-home-role {
+    margin-top: calc(var(--ch-unit) * 5) !important;
+    font-size: calc(var(--ch-unit) * 13);
+    line-height: calc(var(--ch-unit) * 16);
+  }
+
+  .cabinet-home-divider {
+    margin-top: calc(var(--ch-unit) * 11);
+  }
+
+  .cabinet-home-works {
+    margin-top: calc(var(--ch-unit) * 9) !important;
+    font-size: calc(var(--ch-unit) * 66);
+    transform: scaleX(1.08);
+  }
+
+  .cabinet-home-works-line {
+    line-height: calc(var(--ch-unit) * 62);
+  }
+
+  .cabinet-home-years {
+    margin-top: calc(var(--ch-unit) * 9) !important;
+    font-size: calc(var(--ch-unit) * 13);
+    line-height: calc(var(--ch-unit) * 16);
+  }
+
+  .cabinet-home-stage {
+    margin-top: calc(-1 * var(--ch-unit) * 6);
+    padding-top: calc(var(--ch-unit) * 2);
+  }
+
+}
+
+@media (pointer: coarse) {
+  .cabinet-home-open-arrow-wrap--blink {
+    animation: none;
   }
 }
 

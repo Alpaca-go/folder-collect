@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type AnimationEvent,
+  type CSSProperties,
+} from 'react'
 import folderBottomUrl from '../../assets/folder-bottom.png'
 import innerCard01Url from '../../assets/inner-card-01.png'
 import innerCard02Url from '../../assets/inner-card-02.png'
@@ -43,18 +50,70 @@ const PROFILE_DECK_FACE_CLOSE_DURATION_MS = 300
 const PROFILE_DECK_FACE_CLOSE_PAUSE_MS = 280
 const PROFILE_DECK_FACE_CLOSE_BEFORE_DOCK_MS =
   PROFILE_DECK_FACE_CLOSE_DURATION_MS + PROFILE_DECK_FACE_CLOSE_PAUSE_MS
+/** Sync with --profile-deck-move-duration / --profile-deck-face-flip-duration in cabinet.css */
+const PROFILE_DECK_UNDOCK_MOVE_MS = 560
+const PROFILE_DECK_FACE_FLIP_MS = 1400
+/** Start inner card 01 before folder face fully settles; then 02 follows 01. */
+const PROFILE_DECK_INNER_CARD_01_FLOAT_LEAD_MS = 920
+const PROFILE_DECK_INNER_CARD_02_AFTER_01_MS = 220
 
 interface ProfileDeckStackProps {
   docked?: boolean
+  /** Bump after load / cabinet door fully closed to replay dock CCW + inner card 01 intro. */
+  homeIntroKey?: number
   onUndock?: () => void
 }
 
-export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDeckStackProps) {
+export default function ProfileDeckStack({
+  docked = false,
+  homeIntroKey = 1,
+  onUndock,
+}: ProfileDeckStackProps) {
   const { w: docW, h: docH } = PROFILE_DECK_PSD_DOC
   const [folderFaceOpen, setFolderFaceOpen] = useState(!docked)
   const [motionDocked, setMotionDocked] = useState(docked)
   const [faceClosingForDock, setFaceClosingForDock] = useState(false)
+  const [innerCard01Settled, setInnerCard01Settled] = useState(false)
+  const [innerCard01FloatReady, setInnerCard01FloatReady] = useState(false)
+  const [innerCard02FloatReady, setInnerCard02FloatReady] = useState(false)
+  const [deckDockReveal, setDeckDockReveal] = useState(true)
   const prevDockedRef = useRef(docked)
+
+  const runDeckDockRotateReveal = () => {
+    setDeckDockReveal(true)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setDeckDockReveal(false))
+    })
+  }
+
+  useLayoutEffect(() => {
+    setInnerCard01Settled(false)
+    setDeckDockReveal(true)
+  }, [homeIntroKey])
+
+  useEffect(() => {
+    if (homeIntroKey < 1) return
+    let inner = 0
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => {
+        setDeckDockReveal(false)
+      })
+    })
+    return () => {
+      cancelAnimationFrame(outer)
+      cancelAnimationFrame(inner)
+    }
+  }, [homeIntroKey])
+
+  const finishInnerCard01Intro = (event: AnimationEvent<HTMLImageElement>) => {
+    if (event.target !== event.currentTarget) return
+    if (event.animationName !== 'profile-deck-inner-card-01-intro-props') return
+    const img = event.currentTarget
+    img.style.setProperty('--profile-deck-ic01-rotate', '0deg')
+    img.style.setProperty('--profile-deck-ic01-tx', '0px')
+    img.style.setProperty('--profile-deck-ic01-ty', '0px')
+    setInnerCard01Settled(true)
+  }
 
   useEffect(() => {
     const wasDocked = prevDockedRef.current
@@ -62,12 +121,38 @@ export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDe
 
     if (!docked) {
       setMotionDocked(false)
-      setFolderFaceOpen(true)
       setFaceClosingForDock(false)
-      return
+      setFolderFaceOpen(false)
+      setInnerCard01FloatReady(false)
+      setInnerCard02FloatReady(false)
+
+      const openFaceTimer = window.setTimeout(
+        () => setFolderFaceOpen(true),
+        PROFILE_DECK_UNDOCK_MOVE_MS,
+      )
+      const innerCard01Timer = window.setTimeout(
+        () => setInnerCard01FloatReady(true),
+        PROFILE_DECK_UNDOCK_MOVE_MS +
+          PROFILE_DECK_FACE_FLIP_MS -
+          PROFILE_DECK_INNER_CARD_01_FLOAT_LEAD_MS,
+      )
+      const innerCard02Timer = window.setTimeout(
+        () => setInnerCard02FloatReady(true),
+        PROFILE_DECK_UNDOCK_MOVE_MS +
+          PROFILE_DECK_FACE_FLIP_MS -
+          PROFILE_DECK_INNER_CARD_01_FLOAT_LEAD_MS +
+          PROFILE_DECK_INNER_CARD_02_AFTER_01_MS,
+      )
+      return () => {
+        window.clearTimeout(openFaceTimer)
+        window.clearTimeout(innerCard01Timer)
+        window.clearTimeout(innerCard02Timer)
+      }
     }
 
     setFolderFaceOpen(false)
+    setInnerCard01FloatReady(false)
+    setInnerCard02FloatReady(false)
 
     if (!wasDocked) {
       setFaceClosingForDock(true)
@@ -75,6 +160,7 @@ export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDe
       const id = window.setTimeout(() => {
         setMotionDocked(true)
         setFaceClosingForDock(false)
+        runDeckDockRotateReveal()
       }, PROFILE_DECK_FACE_CLOSE_BEFORE_DOCK_MS)
       return () => window.clearTimeout(id)
     }
@@ -100,7 +186,7 @@ export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDe
         className={`profile-deck-motion${motionDocked ? ' profile-deck-motion--docked' : ''}`}
       >
         <div
-          className={`profile-deck-stage${motionDocked ? ' profile-deck-stage--docked' : ''}${folderFaceOpen ? ' profile-deck-stage--folder-face-open' : ''}${faceClosingForDock ? ' profile-deck-stage--folder-face-closing' : ''}`}
+          className={`profile-deck-stage${motionDocked ? ' profile-deck-stage--docked' : ''}${motionDocked && deckDockReveal ? ' profile-deck-stage--dock-reveal' : ''}${motionDocked && !innerCard01Settled ? ' profile-deck-stage--inner-card-01-intro' : ''}${innerCard01Settled ? ' profile-deck-stage--inner-card-01-settled' : ''}${innerCard01FloatReady ? ' profile-deck-stage--inner-card-01-float-ready' : ''}${innerCard02FloatReady ? ' profile-deck-stage--inner-card-02-float-ready' : ''}${folderFaceOpen ? ' profile-deck-stage--folder-face-open' : ''}${faceClosingForDock ? ' profile-deck-stage--folder-face-closing' : ''}`}
           onPointerDown={(event) => {
             if (!motionDocked) event.stopPropagation()
           }}
@@ -131,12 +217,13 @@ export default function ProfileDeckStack({ docked = false, onUndock }: ProfileDe
 
             return (
               <img
-                key={key}
+                key={key === 'innerCard01' ? `innerCard01-${homeIntroKey}` : key}
                 src={LAYER_SRC[key]}
                 alt=""
                 draggable={false}
-                className={`profile-deck-layer${LAYER_TILT_MINUS_2.has(key) ? ' profile-deck-layer--tilt-minus-2' : ''}${LAYER_TILT_MINUS_1.has(key) ? ' profile-deck-layer--tilt-minus-1' : ''}${LAYER_TILT_PLUS_1.has(key) ? ' profile-deck-layer--tilt-plus-1' : ''}${isInnerCard ? ' profile-deck-layer--inner-card' : ''}`}
+                className={`profile-deck-layer${key === 'innerCard01' ? ' profile-deck-layer--inner-card-01' : ''}${LAYER_TILT_MINUS_2.has(key) ? ' profile-deck-layer--tilt-minus-2' : ''}${LAYER_TILT_MINUS_1.has(key) ? ' profile-deck-layer--tilt-minus-1' : ''}${LAYER_TILT_PLUS_1.has(key) ? ' profile-deck-layer--tilt-plus-1' : ''}${isInnerCard ? ' profile-deck-layer--inner-card' : ''}`}
                 style={layerStyle}
+                onAnimationEnd={key === 'innerCard01' ? finishInnerCard01Intro : undefined}
                 role={motionDocked && isInnerCard ? 'button' : undefined}
                 tabIndex={motionDocked && isInnerCard ? 0 : undefined}
                 aria-label={motionDocked && isInnerCard ? 'Expand profile folder' : undefined}

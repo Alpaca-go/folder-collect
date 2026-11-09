@@ -113,6 +113,7 @@
   z-index: 5;
   pointer-events: auto;
   overflow: hidden;
+  container-type: size;
 }
 
 .profile-deck-overlay--docked {
@@ -148,38 +149,131 @@
   inset: 0;
   z-index: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding-bottom: calc(var(--ch-unit) * 36);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   pointer-events: none;
+  opacity: 1;
+  transition: opacity var(--profile-deck-move-duration, 560ms)
+    cubic-bezier(0.22, 0, 0.15, 1);
 }
 
 .profile-deck-overlay {
+  --profile-deck-dock-scale: 1.4;
+  --profile-deck-dock-scale-peek: 1.1;
+  /* Bottom lip height — ch-unit keeps the lip uncut (not a hard clip). */
+  --profile-deck-peek: clamp(
+    calc(var(--ch-unit) * 14),
+    calc(var(--ch-unit) * 16 + 0.35dvh),
+    calc(var(--ch-unit) * 22)
+  );
+  --profile-deck-dock-lift: calc(var(--ch-unit) * 3.5);
+  /* Extra sink when dock-scale-peek > 1 (scale grows upward from bottom). */
+  --profile-deck-dock-sink: calc(
+    var(--profile-deck-peek) * (var(--profile-deck-dock-scale-peek) - 1) * 0.5 +
+      var(--ch-unit) * 0.5
+  );
+  --profile-deck-dock-y: calc(
+    100% - var(--profile-deck-peek) - var(--profile-deck-dock-lift) +
+      var(--profile-deck-dock-sink)
+  );
+  /* Float center from bottom anchor — same flex layout as docked (no layout snap). */
+  --profile-deck-float-y: calc(-50cqh + 50% + var(--ch-unit) * 16);
   --profile-deck-dock-shift: calc(40dvh + var(--ch-unit) * 76 + 220px);
+  --profile-deck-exit-lift: 24dvh;
   --profile-deck-exit-shift: calc(var(--profile-deck-dock-shift) + 28dvh);
   --profile-deck-enter-from-shift: var(--profile-deck-exit-shift);
   --profile-deck-move-duration: 560ms;
+  --profile-deck-dock-rotate: 5deg;
+  /* CCW settle: large opening tilt → dock angle (page load + door close). */
+  --profile-deck-dock-rotate-from: 28deg;
   /* Undock (float up): rotate lingers after translate finishes. */
   --profile-deck-rotate-duration-undock: 820ms;
   --profile-deck-rotate-delay: 0ms;
   --profile-deck-face-flip-duration: 1400ms;
   --profile-deck-face-close-duration: 300ms;
   --profile-deck-face-close-pause: 280ms;
-  transition: opacity var(--profile-deck-move-duration) cubic-bezier(0.22, 0, 0.15, 1);
+  --profile-deck-inner-card-01-intro-rotate: 16deg;
+  --profile-deck-inner-card-01-intro-drop: calc(var(--ch-unit) * 38);
+  --profile-deck-inner-card-01-intro-shift-x: calc(var(--ch-unit) * 8);
+  --profile-deck-inner-card-01-intro-duration: 1520ms;
 }
 
 .profile-deck-overlay--exiting {
-  opacity: 0;
   pointer-events: none;
 }
 
-/* Beat .profile-deck-motion / .profile-deck-motion--docked so exit slides down, not just fade. */
-.profile-deck-overlay.profile-deck-overlay--exiting .profile-deck-motion {
-  transform: translate(-10px, var(--profile-deck-exit-shift)) scale(1.35);
+/* Door-open dismiss: stay in the tree; avoid mobile compositor flash from unmount. */
+.profile-deck-overlay--dismissed {
+  visibility: hidden;
+  pointer-events: none;
 }
 
-.profile-deck-overlay.profile-deck-overlay--exiting .profile-deck-stage,
-.profile-deck-overlay.profile-deck-overlay--exiting .profile-deck-stage--docked {
+.profile-deck-overlay--dismissed .profile-deck-wrap {
+  visibility: hidden;
+}
+
+/* Keep end-of-exit transforms when --exiting drops (snap-back flashes the cabinet on iOS). */
+.profile-deck-overlay--dismissed.profile-deck-overlay--docked .profile-deck-motion,
+.profile-deck-overlay--dismissed.profile-deck-overlay--docked .profile-deck-motion--docked {
+  transform: translate(-10px, calc(100% + var(--profile-deck-exit-lift)))
+    scale(var(--profile-deck-dock-scale-peek));
+  opacity: 0;
+  transition: none;
+}
+
+.profile-deck-overlay--dismissed.profile-deck-overlay--docked .profile-deck-stage,
+.profile-deck-overlay--dismissed.profile-deck-overlay--docked .profile-deck-stage--docked {
+  transform: rotate(var(--profile-deck-dock-rotate-from));
+  transition: none;
+}
+
+.profile-deck-overlay--dismissed:not(.profile-deck-overlay--docked) .profile-deck-motion {
+  transform: translate(-10px, var(--profile-deck-exit-shift))
+    scale(var(--profile-deck-dock-scale));
+  transition: none;
+}
+
+.profile-deck-overlay--exiting .profile-deck-layer--inner-card-01 {
+  animation: none !important;
+  will-change: auto;
+}
+
+/* Beat .profile-deck-motion / .profile-deck-motion--docked so exit slides down, not just fade. */
+.profile-deck-overlay.profile-deck-overlay--exiting.profile-deck-overlay--docked .profile-deck-motion {
+  transform: translate(-10px, calc(100% + var(--profile-deck-exit-lift)))
+    scale(var(--profile-deck-dock-scale-peek));
+}
+
+.profile-deck-overlay.profile-deck-overlay--exiting:not(.profile-deck-overlay--docked) .profile-deck-motion {
+  transform: translate(-10px, var(--profile-deck-exit-shift))
+    scale(var(--profile-deck-dock-scale));
+}
+
+/* Dock exit: mirror home intro (5deg → 15deg) while sliding down. */
+.profile-deck-overlay.profile-deck-overlay--exiting.profile-deck-overlay--docked .profile-deck-stage,
+.profile-deck-overlay.profile-deck-overlay--exiting.profile-deck-overlay--docked
+  .profile-deck-stage--docked {
+  transform: rotate(var(--profile-deck-dock-rotate-from));
+  transition-duration: var(--profile-deck-move-duration);
+}
+
+/* Fade the deck only — not the full-screen wrap (avoids cabinet blink behind overlay). */
+.profile-deck-overlay.profile-deck-overlay--exiting.profile-deck-overlay--docked .profile-deck-motion,
+.profile-deck-overlay.profile-deck-overlay--exiting.profile-deck-overlay--docked .profile-deck-motion--docked {
+  opacity: 0;
+  transition:
+    transform var(--profile-deck-move-duration) cubic-bezier(0.22, 0, 0.15, 1),
+    opacity var(--profile-deck-move-duration) cubic-bezier(0.22, 0, 0.15, 1);
+}
+
+.profile-deck-overlay--exiting.profile-deck-overlay--docked {
+  contain: paint;
+}
+
+.profile-deck-overlay.profile-deck-overlay--exiting:not(.profile-deck-overlay--docked) .profile-deck-stage,
+.profile-deck-overlay.profile-deck-overlay--exiting:not(.profile-deck-overlay--docked)
+  .profile-deck-stage--docked {
   transform: rotate(0deg);
   transition-duration: var(--profile-deck-move-duration);
 }
@@ -188,8 +282,14 @@
   opacity: 0;
 }
 
-.profile-deck-overlay--entering {
+.profile-deck-overlay--exiting.profile-deck-overlay--docked .profile-deck-veil {
+  transition: none;
+}
+
+/* Float return only — docked rise stays visible (deck rotate + inner card intro). */
+.profile-deck-overlay--entering:not(.profile-deck-overlay--docked) {
   opacity: 0;
+  transition: opacity var(--profile-deck-move-duration) cubic-bezier(0.22, 0, 0.15, 1);
 }
 
 .profile-deck-overlay--entering .profile-deck-veil {
@@ -198,30 +298,84 @@
 
 /* Center: rise from below while fading in. */
 .profile-deck-overlay.profile-deck-overlay--entering:not(.profile-deck-overlay--docked) .profile-deck-motion {
-  transform: translate(-10px, var(--profile-deck-enter-from-shift)) scale(1.35);
+  transform: translate(-10px, var(--profile-deck-enter-from-shift))
+    scale(var(--profile-deck-dock-scale));
 }
 
-/* Docked return (door closed): rise from exit depth to dock peek. */
-.profile-deck-overlay.profile-deck-overlay--entering.profile-deck-overlay--docked .profile-deck-motion,
-.profile-deck-overlay.profile-deck-overlay--entering.profile-deck-overlay--docked .profile-deck-motion--docked {
-  transform: translate(-10px, var(--profile-deck-enter-from-shift)) scale(1.35);
+/* Door closed: dock peek + rotate intro only (no translate rise). */
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--docked .profile-deck-motion,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--docked .profile-deck-motion--docked,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--dismissed.profile-deck-overlay--docked
+  .profile-deck-motion,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--dismissed.profile-deck-overlay--docked
+  .profile-deck-motion--docked {
+  transform: translate(-10px, var(--profile-deck-dock-y))
+    scale(var(--profile-deck-dock-scale-peek));
+  opacity: 1;
+  transition: none;
 }
 
-.profile-deck-overlay.profile-deck-overlay--entering.profile-deck-overlay--docked .profile-deck-stage,
-.profile-deck-overlay.profile-deck-overlay--entering.profile-deck-overlay--docked .profile-deck-stage--docked {
-  transform: rotate(0deg);
-  transition-duration: var(--profile-deck-move-duration);
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--docked .profile-deck-wrap,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--dismissed.profile-deck-overlay--docked
+  .profile-deck-wrap {
+  opacity: 1;
+  transition: none;
+}
+
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--docked .profile-deck-stage,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--docked .profile-deck-stage--docked,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--dismissed.profile-deck-overlay--docked
+  .profile-deck-stage,
+.profile-deck-overlay--dock-home-snap.profile-deck-overlay--dismissed.profile-deck-overlay--docked
+  .profile-deck-stage--docked {
+  transform: rotate(var(--profile-deck-dock-rotate-from));
+  transition: none;
 }
 
 .profile-deck-overlay .profile-deck-motion {
+  opacity: 1;
   transition: transform var(--profile-deck-move-duration) cubic-bezier(0.22, 0, 0.15, 1);
   transition-delay: 0ms;
-  transform: translateY(calc(var(--ch-unit) * 16)) scale(1.35);
-  transform-origin: center center;
+  transform: translate(-10px, var(--profile-deck-float-y)) scale(var(--profile-deck-dock-scale));
+  transform-origin: bottom center;
 }
 
 .profile-deck-overlay .profile-deck-motion--docked {
-  transform: translate(-10px, var(--profile-deck-dock-shift)) scale(1.35);
+  transform: translate(-10px, var(--profile-deck-dock-y))
+    scale(var(--profile-deck-dock-scale-peek));
+  transform-origin: bottom center;
+}
+
+@media (max-width: 520px) {
+  .cabinet-home .cabinet-raster-stage {
+    isolation: isolate;
+    transform: translateZ(0);
+  }
+
+  .cabinet-drawer-motion {
+    will-change: auto;
+  }
+
+  .profile-deck-overlay {
+    /* dvh jumps when the mobile browser chrome hides — keep peek/exit in ch-units. */
+    --profile-deck-peek: clamp(
+      calc(var(--ch-unit) * 13),
+      calc(var(--ch-unit) * 15),
+      calc(var(--ch-unit) * 19)
+    );
+    --profile-deck-dock-scale-peek: 1.11;
+    --profile-deck-dock-lift: calc(var(--ch-unit) * 3.5);
+    --profile-deck-dock-sink: calc(
+      var(--profile-deck-peek) * (var(--profile-deck-dock-scale-peek) - 1) * 0.5 +
+        var(--ch-unit) * 1
+    );
+    --profile-deck-exit-lift: calc(var(--ch-unit) * 196);
+  }
+
+  .profile-deck-overlay--exiting.profile-deck-overlay--docked,
+  .profile-deck-overlay--dismissed {
+    z-index: 0;
+  }
 }
 
 .profile-deck-overlay .profile-deck-stage {
@@ -239,10 +393,14 @@
   perspective: 1600px;
 }
 
-/* Dock (dive down): rotate matches move — same start and end time. */
+/* Dock: CCW from dock-rotate-from → dock-rotate (see --dock-reveal on first paint / after door). */
 .profile-deck-overlay .profile-deck-stage--docked {
-  transform: rotate(5deg);
+  transform: rotate(var(--profile-deck-dock-rotate));
   transition-duration: var(--profile-deck-move-duration);
+}
+
+.profile-deck-overlay .profile-deck-stage--docked.profile-deck-stage--dock-reveal {
+  transform: rotate(var(--profile-deck-dock-rotate-from));
 }
 
 .profile-deck-overlay--docked .profile-deck-wrap {
@@ -268,13 +426,13 @@
   flex-shrink: 0;
   width: min(
     calc(
-      (100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * 0.92
+      (100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * 0.95
     ),
-    calc(var(--ch-unit) * 340)
+    calc(var(--ch-unit) * 358)
   );
   max-width: 100%;
   height: auto;
-  max-height: min(52dvh, calc(var(--ch-unit) * 420));
+  max-height: min(54dvh, calc(var(--ch-unit) * 438));
   aspect-ratio: var(--psd-doc-w, 1163) / var(--psd-doc-h, 1525);
 }
 
@@ -348,15 +506,102 @@
   transform: rotate(1deg) translateX(4px);
 }
 
-.profile-deck-stage:not(.profile-deck-stage--docked) .profile-deck-layer--tilt-minus-1,
-.profile-deck-stage:not(.profile-deck-stage--docked) .profile-deck-layer--tilt-plus-1 {
-  transition-delay: 220ms;
+/* Undock: each inner card stays flat until its float-ready class (01 then 02). */
+.profile-deck-stage:not(.profile-deck-stage--docked):not(
+    .profile-deck-stage--inner-card-01-float-ready
+  )
+  .profile-deck-layer--tilt-minus-1,
+.profile-deck-stage:not(.profile-deck-stage--docked):not(
+    .profile-deck-stage--inner-card-01-float-ready
+  )
+  .profile-deck-layer--inner-card-01 {
+  transform: none;
+  transition-delay: 0ms;
 }
 
-.profile-deck-stage--docked .profile-deck-layer--tilt-minus-1,
+.profile-deck-stage:not(.profile-deck-stage--docked):not(
+    .profile-deck-stage--inner-card-02-float-ready
+  )
+  .profile-deck-layer--tilt-plus-1 {
+  transform: none;
+  transition-delay: 0ms;
+}
+
+.profile-deck-stage--docked
+  .profile-deck-layer--tilt-minus-1:not(.profile-deck-layer--inner-card-01),
 .profile-deck-stage--docked .profile-deck-layer--tilt-plus-1 {
   transform: none;
   transition-delay: 0ms;
+}
+
+@property --profile-deck-ic01-rotate {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --profile-deck-ic01-tx {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --profile-deck-ic01-ty {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.profile-deck-layer--inner-card-01 {
+  transform-origin: left bottom;
+  transition: none;
+}
+
+.profile-deck-stage--docked .profile-deck-layer--inner-card-01 {
+  transform: rotate(var(--profile-deck-ic01-rotate, 0deg))
+    translate3d(var(--profile-deck-ic01-tx, 0px), var(--profile-deck-ic01-ty, 0px), 0);
+}
+
+.profile-deck-stage:not(.profile-deck-stage--docked) .profile-deck-layer--inner-card-01 {
+  transition: transform 560ms cubic-bezier(0.22, 0, 0.15, 1);
+}
+
+.profile-deck-stage--docked.profile-deck-stage--inner-card-01-intro
+  .profile-deck-layer--inner-card-01 {
+  will-change: transform, --profile-deck-ic01-rotate, --profile-deck-ic01-tx,
+    --profile-deck-ic01-ty;
+  animation: profile-deck-inner-card-01-intro-props
+    var(--profile-deck-inner-card-01-intro-duration) linear both;
+}
+
+.profile-deck-stage--docked.profile-deck-stage--inner-card-01-settled
+  .profile-deck-layer--inner-card-01 {
+  --profile-deck-ic01-rotate: 0deg;
+  --profile-deck-ic01-tx: 0px;
+  --profile-deck-ic01-ty: 0px;
+  transition: none;
+  animation: none;
+  will-change: auto;
+}
+
+@keyframes profile-deck-inner-card-01-intro-props {
+  0% {
+    --profile-deck-ic01-rotate: var(--profile-deck-inner-card-01-intro-rotate);
+    --profile-deck-ic01-tx: var(--profile-deck-inner-card-01-intro-shift-x);
+    --profile-deck-ic01-ty: var(--profile-deck-inner-card-01-intro-drop);
+    animation-timing-function: cubic-bezier(0.32, 0.02, 0.18, 1);
+  }
+  44% {
+    --profile-deck-ic01-rotate: var(--profile-deck-inner-card-01-intro-rotate);
+    --profile-deck-ic01-tx: 0px;
+    --profile-deck-ic01-ty: 0px;
+    animation-timing-function: cubic-bezier(0.2, 0.04, 0.26, 1);
+  }
+  100% {
+    --profile-deck-ic01-rotate: 0deg;
+    --profile-deck-ic01-tx: 0px;
+    --profile-deck-ic01-ty: 0px;
+  }
 }
 
 .cabinet-home-stage--hidden {
@@ -388,6 +633,23 @@
   width: var(--raster-stage-w);
   max-height: 100cqh;
   max-width: 100%;
+}
+
+@media (max-width: 520px) {
+  .cabinet-home .cabinet-diagram-wrap,
+  .cabinet-home .cabinet-diagram-wrap--raster {
+    max-height: var(--diagram-max-h);
+    --diagram-w: min(
+      calc(
+        (100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)) * 0.78
+      ),
+      calc(var(--diagram-max-h) * var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271))
+    );
+    --raster-stage-w: min(
+      var(--diagram-w),
+      calc(var(--diagram-max-h) * var(--psd-doc-w, 1380) / var(--psd-doc-h, 2271))
+    );
+  }
 }
 
 .cabinet-home-cta {
@@ -503,6 +765,8 @@
 
 .cabinet-raster-layer--static-shadow {
   z-index: 0;
+  isolation: isolate;
+  contain: paint;
 }
 
 .cabinet-raster-layer--interior {
