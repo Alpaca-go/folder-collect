@@ -111,8 +111,6 @@ export default function CabinetHome({
 
       <CabinetHomeHero />
 
-      {!showProfileDeck && <div className="cabinet-home-veil" aria-hidden />}
-
       <div
         className={`cabinet-home-stage min-h-0${cabinetStageHidden ? ' cabinet-home-stage--hidden' : ''}`}
       >

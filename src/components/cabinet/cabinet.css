@@ -76,16 +76,8 @@
   width: 100%;
 }
 
-.cabinet-home-veil,
 .profile-deck-overlay .profile-deck-veil {
   background: rgba(28, 24, 20, 0.72);
-}
-
-.cabinet-home-veil {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
 }
 
 /* Folder deck floats above the unchanged home layout (hero + cabinet + door CTA). */
