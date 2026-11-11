@@ -54,6 +54,7 @@ body {
   overflow: hidden;
 }
 
+[data-purpose='app-shell']:has(.folder-scroll--overlay-open),
 [data-purpose='app-shell']:has(.folder-scroll--docked) {
   overflow: visible;
 }
@@ -93,6 +94,15 @@ body {
 [data-purpose='files-scroll-container'] {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: auto;
+}
+
+/* Open folder: pocket mask spans scroll width; avoid axis clip on descendants. */
+.folder-scroll--overlay-open,
+.folder-scroll--overlay-open .folder-files-layout,
+.folder-scroll--overlay-open #cards-stack,
+.folder-scroll--overlay-open .elastic-folder-wrapper--active-focus,
+.folder-scroll--overlay-open [data-purpose='contact-card'] {
+  overflow: visible;
 }
 
 .elastic-folder-wrapper {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { contacts } from '../data/contacts'
 import { type FolderMode } from './FolderCard'
 import StackFolderItem from './StackFolderItem'
@@ -8,13 +9,19 @@ import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import { folderOffsetToDockPeek } from '../utils/folderDockOffset'
 import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
 import {
+  measureScreenPocketPin,
+  mountPinnedPocketNodes,
+  releasePinnedPocketNodes,
+} from '../utils/measureScreenCardPins'
+import { FOLDER_DESIGN } from '../config/folderDesign'
+import {
   generateSpreadCardLayouts,
   hashFolderSeed,
   type SpreadCardLayout,
 } from '../utils/innerCardSpread'
 import CabinetHomeHero from './cabinet/CabinetHomeHero'
 import BackToCabinetButton from './cabinet/BackToCabinetButton'
-import FolderSpreadCards from './FolderSpreadCards'
+import FolderSpreadExtraCards from './FolderSpreadExtraCards'
 
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
@@ -56,11 +63,16 @@ export default function ContactList({
   const [closingId, setClosingId] = useState<string | null>(null)
   const [centerOffsetY, setCenterOffsetY] = useState(0)
   const [closePhase, setClosePhase] = useState<ClosePhase>(null)
+  /** Second tap: dock folder while pocket cards stay fixed on screen. */
+  const [folderDocked, setFolderDocked] = useState(false)
+  const [spreadExtraIn, setSpreadExtraIn] = useState(false)
   const [spreadLayouts, setSpreadLayouts] = useState<SpreadCardLayout[] | null>(null)
-  /** Second tap on an open folder: bottom dock + 8-card spread. */
-  const [spreadOpen, setSpreadOpen] = useState(false)
+  const [folderSpreadScale, setFolderSpreadScale] = useState(1)
+  const pinnedPocketNodesRef = useRef<HTMLElement[] | null>(null)
+  const viewHostRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const spreadTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const blockPageScroll = Boolean(activeId)
   const elasticEnabled = !measureOnly && !activeId && !listRevealActive
@@ -83,7 +95,30 @@ export default function ContactList({
     closeTimersRef.current = []
   }
 
-  useEffect(() => () => clearCloseTimers(), [])
+  const clearSpreadTimers = () => {
+    spreadTimersRef.current.forEach(clearTimeout)
+    spreadTimersRef.current = []
+  }
+
+  useEffect(
+    () => () => {
+      clearCloseTimers()
+      clearSpreadTimers()
+      releasePinnedPocketNodes(pinnedPocketNodesRef.current)
+      pinnedPocketNodesRef.current = null
+    },
+    [],
+  )
+
+  const resetDockState = () => {
+    clearSpreadTimers()
+    releasePinnedPocketNodes(pinnedPocketNodesRef.current)
+    pinnedPocketNodesRef.current = null
+    setSpreadExtraIn(false)
+    setSpreadLayouts(null)
+    setFolderSpreadScale(1)
+    setFolderDocked(false)
+  }
 
   const handleClose = () => {
     if (!activeId || closePhase) return
@@ -95,6 +130,7 @@ export default function ContactList({
     const returnEndMs = returnStartMs + RETURN_DURATION_MS
     const revealStartMs = returnEndMs - REVEAL_OVERLAP_MS
 
+    resetDockState()
     setClosingId(activeId)
     setActiveId(null)
     setClosePhase('folding')
@@ -116,8 +152,6 @@ export default function ContactList({
       window.setTimeout(() => {
         setClosingId(null)
         setClosePhase(null)
-        setSpreadLayouts(null)
-        setSpreadOpen(false)
       }, revealStartMs + totalRevealMs),
     )
   }
@@ -140,28 +174,49 @@ export default function ContactList({
       setClosingId(null)
       setClosePhase(null)
       setCenterOffsetY(0)
-      setSpreadLayouts(null)
-      setSpreadOpen(false)
+      resetDockState()
     }
 
     const container = scrollRef.current
     if (!container) return
 
-    setSpreadLayouts(null)
-    setSpreadOpen(false)
+    resetDockState()
     setCenterOffsetY(folderOffsetToViewportCenter(container, element))
     setActiveId(id)
   }
 
-  const handlePromoteToSpread = (id: string, element: HTMLElement) => {
-    if (activeId !== id || spreadOpen || closePhase) return
+  const handleDockFolder = (id: string, element: HTMLElement) => {
+    if (activeId !== id || folderDocked || closePhase) return
 
     const container = scrollRef.current
     if (!container) return
 
-    setSpreadLayouts(generateSpreadCardLayouts(hashFolderSeed(id)))
-    setSpreadOpen(true)
-    setCenterOffsetY((prev) => prev + folderOffsetToDockPeek(container, element))
+    const pocketRoot = element.querySelector<HTMLElement>('[data-inner-pocket-cards-root]')
+    if (pocketRoot) pocketRoot.style.visibility = 'hidden'
+
+    const snapshot = measureScreenPocketPin(element)
+    if (!snapshot) {
+      if (pocketRoot) pocketRoot.style.visibility = ''
+      return
+    }
+
+    pinnedPocketNodesRef.current = snapshot.nodes
+    mountPinnedPocketNodes(snapshot.nodes)
+
+    const spreadScale = element.getBoundingClientRect().width / FOLDER_DESIGN.width
+
+    flushSync(() => {
+      setFolderSpreadScale(spreadScale)
+      setSpreadLayouts(generateSpreadCardLayouts(hashFolderSeed(id)))
+      setSpreadExtraIn(true)
+      setFolderDocked(true)
+    })
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setCenterOffsetY((prev) => prev + folderOffsetToDockPeek(container, element))
+      })
+    })
   }
 
   const focusedFolderId = activeId ?? closingId
@@ -183,12 +238,6 @@ export default function ContactList({
     ? contacts.findIndex((contact) => contact.id === focusedFolderId)
     : -1
   const isOverlayOpen = Boolean(activeId)
-  const folderDocked = spreadOpen && Boolean(activeId)
-  const spreadCardsVisible =
-    spreadOpen &&
-    Boolean(spreadLayouts) &&
-    Boolean(focusedFolderId) &&
-    (closePhase === null || closePhase === 'folding')
   /** On close, siblings stay in stack slots (no dive) until reveal — avoids a second visible row. */
   const stackSiblingsCollapsed =
     closePhase === 'folding' || closePhase === 'returning' || closePhase === 'revealing'
@@ -235,6 +284,7 @@ export default function ContactList({
 
   return (
     <div
+      ref={viewHostRef}
       className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}${
         folderDocked ? ' folder-view--docked' : ''
       }`}
@@ -247,9 +297,7 @@ export default function ContactList({
           folderDocked ? ' folder-scroll--docked' : ''
         } ${
           blockPageScroll
-            ? folderDocked
-              ? 'overflow-visible touch-pan-y'
-              : 'overflow-y-hidden touch-pan-y'
+            ? 'overflow-visible touch-pan-y folder-scroll--overlay-open'
             : useNativeScroll
               ? 'overflow-y-auto touch-pan-y'
               : 'overflow-y-auto touch-none'
@@ -361,16 +409,16 @@ export default function ContactList({
                 elasticOffset={elasticOffsets[index]}
                 shouldSuppressActivate={suppressNextClick}
                 onActivate={(el) => handleActivate(contact.id, el)}
-                onPromoteToSpread={(el) => handlePromoteToSpread(contact.id, el)}
+                onDockFolder={(el) => handleDockFolder(contact.id, el)}
                 focusAboveOverlay={activeId === contact.id && !closePhase}
-                spreadMode={spreadOpen && activeId === contact.id}
+                folderDocked={folderDocked && activeId === contact.id}
                 itemHidden={folderHidden}
                 itemEntering={folderEntering}
                 stackSiblingCollapsed={
                   stackSiblingsCollapsed && contact.id !== focusedFolderId
                 }
                 pocketInnerCards={
-                  contact.id !== focusedFolderId || !spreadOpen
+                  contact.id === focusedFolderId && !folderDocked
                 }
               />
             )
@@ -379,11 +427,8 @@ export default function ContactList({
         </div>
       </main>
 
-      {spreadCardsVisible && spreadLayouts && (
-        <FolderSpreadCards
-          layouts={spreadLayouts}
-          closing={closePhase === 'folding'}
-        />
+      {folderDocked && spreadExtraIn && spreadLayouts && (
+        <FolderSpreadExtraCards layouts={spreadLayouts} folderScale={folderSpreadScale} />
       )}
     </div>
   )

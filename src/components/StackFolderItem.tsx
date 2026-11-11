@@ -12,9 +12,9 @@ interface StackFolderItemProps {
   elasticOffset: MotionValue<number>
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
-  onPromoteToSpread?: (element: HTMLElement) => void
+  onDockFolder?: (element: HTMLElement) => void
   focusAboveOverlay?: boolean
-  spreadMode?: boolean
+  folderDocked?: boolean
   itemHidden?: boolean
   itemEntering?: boolean
   stackSiblingCollapsed?: boolean
@@ -31,9 +31,9 @@ export default function StackFolderItem({
   elasticOffset,
   shouldSuppressActivate,
   onActivate,
-  onPromoteToSpread,
+  onDockFolder,
   focusAboveOverlay = false,
-  spreadMode = false,
+  folderDocked = false,
   itemHidden = false,
   itemEntering = false,
   stackSiblingCollapsed = false,
@@ -64,8 +64,8 @@ export default function StackFolderItem({
         revealDelay={revealDelay}
         shouldSuppressActivate={shouldSuppressActivate}
         onActivate={onActivate}
-        onPromoteToSpread={onPromoteToSpread}
-        spreadMode={spreadMode}
+        onDockFolder={onDockFolder}
+        folderDocked={folderDocked}
         stackSiblingCollapsed={stackSiblingCollapsed}
         pocketInnerCards={pocketInnerCards}
       />

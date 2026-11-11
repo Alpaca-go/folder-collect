@@ -26,12 +26,11 @@ interface FolderCardProps {
   revealDelay?: number
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
-  /** Second tap while active: dock folder and show spread cards. */
-  onPromoteToSpread?: (element: HTMLElement) => void
-  spreadMode?: boolean
+  /** Second tap while active: dock folder; pocket cards stay fixed via portal clone. */
+  onDockFolder?: (element: HTMLElement) => void
+  folderDocked?: boolean
   /** Close path: keep hidden siblings in stack slots (no inactive dive). */
   stackSiblingCollapsed?: boolean
-  /** When false, inner cards render in the spread overlay instead of the folder pocket. */
   pocketInnerCards?: boolean
 }
 
@@ -44,8 +43,8 @@ export default function FolderCard({
   revealDelay = 0,
   shouldSuppressActivate,
   onActivate,
-  onPromoteToSpread,
-  spreadMode = false,
+  onDockFolder,
+  folderDocked = false,
   stackSiblingCollapsed = false,
   pocketInnerCards = true,
 }: FolderCardProps) {
@@ -121,6 +120,7 @@ export default function FolderCard({
         zIndex: isCentered || mode === 'returning' ? 100 : stackZIndexForIndex(index),
         transformPerspective: FOLDER_PERSPECTIVE,
         transformOrigin: '50% 0%',
+        overflow: showInnerCards ? 'visible' : undefined,
         pointerEvents:
           mode === 'inactive' || mode === 'closing' || mode === 'returning' ? 'none' : 'auto',
         aspectRatio: FOLDER_ASPECT_RATIO,
@@ -142,15 +142,15 @@ export default function FolderCard({
         />
       )}
 
-      {mode === 'active' && !spreadMode && onPromoteToSpread && (
+      {mode === 'active' && !folderDocked && onDockFolder && (
         <button
           type="button"
-          aria-label={`Expand ${name}`}
+          aria-label={`Dock ${name}`}
           className="absolute inset-0 z-40 cursor-pointer border-0 bg-transparent p-0"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation()
-            if (rootRef.current) onPromoteToSpread(rootRef.current)
+            if (rootRef.current) onDockFolder(rootRef.current)
           }}
         />
       )}

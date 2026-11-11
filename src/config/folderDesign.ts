@@ -7,9 +7,11 @@ export const FOLDER_DESIGN = {
   labelFontSize: 13.5,
   stackOverlap: 160,
   stackBottomTrim: 170,
-  innerCardHeight: 108,
-  innerCardHiddenY: 14,
-  innerCardPeekY: -96,
+  /** Card width = folder width × ratio; height = width × heightPerWidth (2:3 portrait). */
+  innerCardWidthOfFolder: 0.5,
+  innerCardHeightPerWidth: 1.5,
+  /** Visible strip above pocket floor when folder is open (design px @ folder width). */
+  innerCardPeekVisibleHeight: 200,
   innerCardInsetX: 8,
   innerCardRadius: 12,
   innerCardShadowY: 4,
@@ -19,16 +21,14 @@ export const FOLDER_DESIGN = {
   innerCardSkeletonLineSecondary: 8,
   innerCardSkeletonGap: 8,
   innerCardSkeletonBlockGap: 12,
-  spreadCardWidth: 200,
-  spreadCardHeight: 132,
   spreadCardHiddenY: 48,
 } as const
 
 /** Pocket preview count when folder is not using spread overlay (legacy peek). */
 export const INNER_CARDS = [
-  { rotate: -12, x: -14, delay: 0.32 },
+  { rotate: -12, x: -32, delay: 0.32 },
   { rotate: -1, x: 0, delay: 0.48 },
-  { rotate: 11, x: 16, delay: 0.64 },
+  { rotate: 11, x: 32, delay: 0.64 },
 ] as const
 
 /** Active-folder spread stack — adjust count here later. */
@@ -42,9 +42,40 @@ export const INNER_CARD_SPREAD = {
   delayBase: 0.22,
   delayStep: 0.05,
   delayJitter: 0.05,
+  gatherDelayBase: 0.06,
+  gatherDelayStep: 0.045,
+} as const
+
+export const INNER_POCKET_CARD_COUNT = 3
+
+/** Spread promote: dive → 5 cards fade in → 8-card gather. */
+export const SPREAD_PROMOTE = {
+  /** Folder dock spring ~ settle before extra cards / gather. */
+  folderDockSettleMs: 560,
+  extraInDurationMs: 420,
+  gatherDurationMs: 720,
 } as const
 
 export const designPx = (value: number, scale: number) => value * scale
+
+export function innerCardSize(scale: number) {
+  const width = designPx(FOLDER_DESIGN.width * FOLDER_DESIGN.innerCardWidthOfFolder, scale)
+  const height = width * FOLDER_DESIGN.innerCardHeightPerWidth
+  return { width, height }
+}
+
+/**
+ * Pocket cards use `bottom` on the floor line; positive `y` moves down.
+ * Peek: only `innerCardPeekVisibleHeight` remains above the floor line.
+ */
+export function innerCardPeekY(cardHeight: number, scale: number) {
+  const peekVisible = designPx(FOLDER_DESIGN.innerCardPeekVisibleHeight, scale)
+  return Math.max(0, cardHeight - peekVisible)
+}
+
+export function innerCardHiddenY(cardHeight: number, scale: number) {
+  return innerCardPeekY(cardHeight, scale) + designPx(48, scale)
+}
 
 export const folderWidthRatio = (value: number) => `${(value / FOLDER_DESIGN.width) * 100}%`
 

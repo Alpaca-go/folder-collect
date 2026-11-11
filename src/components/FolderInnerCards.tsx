@@ -1,14 +1,71 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { designPx, FOLDER_DESIGN, INNER_CARDS } from '../config/folderDesign'
+import {
+  designPx,
+  FOLDER_DESIGN,
+  INNER_CARDS,
+  innerCardHiddenY,
+  innerCardPeekY,
+  innerCardSize,
+} from '../config/folderDesign'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
 interface FolderInnerCardsProps {
   closing?: boolean
 }
 
-function useFolderLayoutScale(containerRef: React.RefObject<HTMLDivElement | null>) {
+/** Scroll container edges — full page width inside the app shell. */
+function scrollPageXBounds(scroll: HTMLElement) {
+  const scrollRect = scroll.getBoundingClientRect()
+  return { left: scrollRect.left, right: scrollRect.right }
+}
+
+/** Clip pocket: top = scroll top, bottom = folder bottom, sides = scroll/page edges. */
+function usePocketClipMask(pocketRef: React.RefObject<HTMLDivElement | null>) {
+  useLayoutEffect(() => {
+    const pocket = pocketRef.current
+    if (!pocket) return
+
+    const folder = pocket.closest<HTMLElement>('[data-purpose="contact-card"]')
+    const scroll = pocket.closest<HTMLElement>('[data-purpose="files-scroll-container"]')
+    if (!folder || !scroll) return
+
+    const apply = () => {
+      const folderRect = folder.getBoundingClientRect()
+      const scrollRect = scroll.getBoundingClientRect()
+      const page = scrollPageXBounds(scroll)
+      const extendUp = Math.max(0, folderRect.top - scrollRect.top)
+      const extendLeft = Math.max(0, folderRect.left - page.left)
+      const extendRight = Math.max(0, page.right - folderRect.right)
+
+      pocket.style.top = `${-extendUp}px`
+      pocket.style.bottom = '0'
+      pocket.style.left = `${-extendLeft}px`
+      pocket.style.right = `${-extendRight}px`
+      pocket.style.overflow = 'hidden'
+      pocket.style.clipPath = 'none'
+      pocket.style.setProperty('--inner-pocket-folder-height', `${folder.offsetHeight}px`)
+      pocket.style.setProperty('--inner-pocket-extend-left', `${extendLeft}px`)
+      pocket.style.setProperty('--inner-pocket-extend-right', `${extendRight}px`)
+    }
+
+    apply()
+    const observer = new ResizeObserver(apply)
+    observer.observe(folder)
+    observer.observe(scroll)
+    scroll.addEventListener('scroll', apply, { passive: true })
+    window.addEventListener('resize', apply)
+    return () => {
+      observer.disconnect()
+      scroll.removeEventListener('scroll', apply)
+      window.removeEventListener('resize', apply)
+    }
+  }, [pocketRef])
+}
+
+function useFolderLayoutMetrics(containerRef: React.RefObject<HTMLDivElement | null>) {
   const [scale, setScale] = useState(1)
+  const [folderHeight, setFolderHeight] = useState(0)
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -19,6 +76,7 @@ function useFolderLayoutScale(containerRef: React.RefObject<HTMLDivElement | nul
 
     const update = () => {
       setScale(folder.offsetWidth / FOLDER_DESIGN.width)
+      setFolderHeight(folder.offsetHeight)
     }
 
     update()
@@ -27,17 +85,19 @@ function useFolderLayoutScale(containerRef: React.RefObject<HTMLDivElement | nul
     return () => observer.disconnect()
   }, [containerRef])
 
-  return scale
+  return { scale, folderHeight }
 }
+
+const POCKET_FLOOR_FROM_FOLDER_BOTTOM = `${(16 / FOLDER_DESIGN.height) * 100}%`
 
 export default function FolderInnerCards({ closing = false }: FolderInnerCardsProps) {
   const pocketRef = useRef<HTMLDivElement>(null)
-  const scale = useFolderLayoutScale(pocketRef)
+  usePocketClipMask(pocketRef)
+  const { scale, folderHeight } = useFolderLayoutMetrics(pocketRef)
 
-  const cardHeight = designPx(FOLDER_DESIGN.innerCardHeight, scale)
-  const hiddenY = designPx(FOLDER_DESIGN.innerCardHiddenY, scale)
-  const peekY = designPx(FOLDER_DESIGN.innerCardPeekY, scale)
-  const insetX = designPx(FOLDER_DESIGN.innerCardInsetX, scale)
+  const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
+  const hiddenY = innerCardHiddenY(cardHeight, scale)
+  const peekY = innerCardPeekY(cardHeight, scale)
   const radius = designPx(FOLDER_DESIGN.innerCardRadius, scale)
   const shadowY = designPx(FOLDER_DESIGN.innerCardShadowY, scale)
   const shadowBlur = designPx(FOLDER_DESIGN.innerCardShadowBlur, scale)
@@ -45,22 +105,37 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
   return (
     <div
       ref={pocketRef}
-      className="absolute left-[8%] right-[8%] z-[15] pointer-events-none"
+      className="absolute z-[15] pointer-events-none"
+      data-inner-pocket-cards-root
       style={{
-        top: `${(76 / FOLDER_DESIGN.height) * 100}%`,
-        bottom: `${(16 / FOLDER_DESIGN.height) * 100}%`,
-        clipPath: 'inset(-220% -22% 0 -22%)',
+        bottom: 0,
+        top: '-50vh',
+        left: 0,
+        right: 0,
+        overflow: 'hidden',
       }}
     >
+      <div
+        className="absolute bottom-0"
+        style={{
+          height: folderHeight || 'var(--inner-pocket-folder-height, 100%)',
+          left: 'var(--inner-pocket-extend-left, 0px)',
+          right: 'var(--inner-pocket-extend-right, 0px)',
+        }}
+        data-inner-pocket-floor
+      >
       {INNER_CARDS.map((card, i) => (
         <motion.div
           key={i}
+          layout={false}
+          data-inner-pocket-card={i}
           className="absolute overflow-hidden border border-neutral-200/80 bg-white"
           style={{
-            left: insetX,
-            right: insetX,
+            left: '50%',
+            width: cardWidth,
             height: cardHeight,
-            bottom: 0,
+            marginLeft: -cardWidth / 2,
+            bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
             zIndex: i + 1,
             transformOrigin: '50% 100%',
             borderRadius: radius,
@@ -78,16 +153,26 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
                   x: designPx(card.x, scale),
                 }
           }
-          transition={{
-            delay: closing ? (INNER_CARDS.length - 1 - i) * 0.07 : card.delay,
-            type: 'spring',
-            stiffness: closing ? 380 : 320,
-            damping: closing ? 32 : 24,
-          }}
+          transition={
+            closing
+              ? {
+                  delay: (INNER_CARDS.length - 1 - i) * 0.07,
+                  type: 'spring',
+                  stiffness: 380,
+                  damping: 32,
+                }
+              : {
+                  delay: card.delay,
+                  type: 'spring',
+                  stiffness: 320,
+                  damping: 24,
+                }
+          }
         >
           <FolderInnerCardFace scale={scale} />
         </motion.div>
       ))}
+      </div>
     </div>
   )
 }
