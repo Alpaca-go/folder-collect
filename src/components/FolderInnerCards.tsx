@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { designPx, FOLDER_DESIGN, INNER_CARDS } from '../config/folderDesign'
+import FolderInnerCardFace from './FolderInnerCardFace'
 
 interface FolderInnerCardsProps {
   closing?: boolean
@@ -40,11 +41,6 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
   const radius = designPx(FOLDER_DESIGN.innerCardRadius, scale)
   const shadowY = designPx(FOLDER_DESIGN.innerCardShadowY, scale)
   const shadowBlur = designPx(FOLDER_DESIGN.innerCardShadowBlur, scale)
-  const skeletonPad = designPx(FOLDER_DESIGN.innerCardSkeletonPad, scale)
-  const skeletonLinePrimary = designPx(FOLDER_DESIGN.innerCardSkeletonLinePrimary, scale)
-  const skeletonLineSecondary = designPx(FOLDER_DESIGN.innerCardSkeletonLineSecondary, scale)
-  const skeletonGap = designPx(FOLDER_DESIGN.innerCardSkeletonGap, scale)
-  const skeletonBlockGap = designPx(FOLDER_DESIGN.innerCardSkeletonBlockGap, scale)
 
   return (
     <div
@@ -89,35 +85,7 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
             damping: closing ? 32 : 24,
           }}
         >
-          <div
-            className="pointer-events-none select-none"
-            style={{
-              paddingLeft: skeletonPad,
-              paddingRight: skeletonPad,
-              paddingTop: skeletonPad,
-            }}
-          >
-            <div
-              className="rounded-full bg-neutral-200/90"
-              style={{
-                marginBottom: skeletonGap,
-                height: skeletonLinePrimary,
-                width: '38%',
-              }}
-            />
-            <div
-              className="rounded-full bg-neutral-100"
-              style={{ height: skeletonLineSecondary, width: '58%' }}
-            />
-            <div
-              className="rounded-full bg-neutral-100/80"
-              style={{
-                marginTop: skeletonBlockGap,
-                height: skeletonLineSecondary,
-                width: '44%',
-              }}
-            />
-          </div>
+          <FolderInnerCardFace scale={scale} />
         </motion.div>
       ))}
     </div>

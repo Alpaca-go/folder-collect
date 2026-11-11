@@ -54,6 +54,23 @@ body {
   overflow: hidden;
 }
 
+[data-purpose='app-shell']:has(.folder-scroll--docked) {
+  overflow: visible;
+}
+
+.folder-view--docked {
+  overflow: visible;
+}
+
+.folder-scroll--docked {
+  overflow: visible !important;
+}
+
+.folder-scroll--docked .folder-files-layout,
+.folder-scroll--docked #cards-stack {
+  overflow: visible;
+}
+
 .app-cabinet-backdrop {
   position: absolute;
   left: 0;
@@ -156,6 +173,40 @@ body {
   to {
     opacity: 1;
   }
+}
+
+.elastic-folder-wrapper--active-focus {
+  position: relative;
+  z-index: 51;
+  pointer-events: auto;
+}
+
+.folder-close-backdrop {
+  touch-action: manipulation;
+}
+
+.folder-spread-cards {
+  top: clamp(148px, 24dvh, 38%);
+  bottom: clamp(72px, 11dvh, 20%);
+}
+
+.folder-spread-cards__stage {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.folder-spread-cards__cluster {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+.folder-spread-cards__card {
+  left: 50%;
+  top: 50%;
 }
 
 .folder-focus-glow {

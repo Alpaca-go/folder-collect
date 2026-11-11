@@ -5,9 +5,16 @@ import StackFolderItem from './StackFolderItem'
 import { useElasticFolderStack } from '../hooks/useElasticFolderStack'
 import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
+import { folderOffsetToDockPeek } from '../utils/folderDockOffset'
 import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
+import {
+  generateSpreadCardLayouts,
+  hashFolderSeed,
+  type SpreadCardLayout,
+} from '../utils/innerCardSpread'
 import CabinetHomeHero from './cabinet/CabinetHomeHero'
 import BackToCabinetButton from './cabinet/BackToCabinetButton'
+import FolderSpreadCards from './FolderSpreadCards'
 
 const FOLD_DURATION_MS = 520
 const RETURN_OVERLAP_MS = 90
@@ -49,6 +56,9 @@ export default function ContactList({
   const [closingId, setClosingId] = useState<string | null>(null)
   const [centerOffsetY, setCenterOffsetY] = useState(0)
   const [closePhase, setClosePhase] = useState<ClosePhase>(null)
+  const [spreadLayouts, setSpreadLayouts] = useState<SpreadCardLayout[] | null>(null)
+  /** Second tap on an open folder: bottom dock + 8-card spread. */
+  const [spreadOpen, setSpreadOpen] = useState(false)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
@@ -106,7 +116,19 @@ export default function ContactList({
       window.setTimeout(() => {
         setClosingId(null)
         setClosePhase(null)
+        setSpreadLayouts(null)
+        setSpreadOpen(false)
       }, revealStartMs + totalRevealMs),
+    )
+  }
+
+  const folderOffsetToViewportCenter = (container: HTMLElement, folderEl: HTMLElement) => {
+    const containerRect = container.getBoundingClientRect()
+    const folderRect = folderEl.getBoundingClientRect()
+    return (
+      containerRect.top +
+      containerRect.height / 2 -
+      (folderRect.top + folderRect.height / 2)
     )
   }
 
@@ -118,18 +140,28 @@ export default function ContactList({
       setClosingId(null)
       setClosePhase(null)
       setCenterOffsetY(0)
+      setSpreadLayouts(null)
+      setSpreadOpen(false)
     }
 
     const container = scrollRef.current
     if (!container) return
 
-    const containerRect = container.getBoundingClientRect()
-    const folderRect = element.getBoundingClientRect()
-    const offset =
-      containerRect.top + containerRect.height / 2 - (folderRect.top + folderRect.height / 2)
-
-    setCenterOffsetY(offset)
+    setSpreadLayouts(null)
+    setSpreadOpen(false)
+    setCenterOffsetY(folderOffsetToViewportCenter(container, element))
     setActiveId(id)
+  }
+
+  const handlePromoteToSpread = (id: string, element: HTMLElement) => {
+    if (activeId !== id || spreadOpen || closePhase) return
+
+    const container = scrollRef.current
+    if (!container) return
+
+    setSpreadLayouts(generateSpreadCardLayouts(hashFolderSeed(id)))
+    setSpreadOpen(true)
+    setCenterOffsetY((prev) => prev + folderOffsetToDockPeek(container, element))
   }
 
   const focusedFolderId = activeId ?? closingId
@@ -151,6 +183,12 @@ export default function ContactList({
     ? contacts.findIndex((contact) => contact.id === focusedFolderId)
     : -1
   const isOverlayOpen = Boolean(activeId)
+  const folderDocked = spreadOpen && Boolean(activeId)
+  const spreadCardsVisible =
+    spreadOpen &&
+    Boolean(spreadLayouts) &&
+    Boolean(focusedFolderId) &&
+    (closePhase === null || closePhase === 'folding')
   /** On close, siblings stay in stack slots (no dive) until reveal — avoids a second visible row. */
   const stackSiblingsCollapsed =
     closePhase === 'folding' || closePhase === 'returning' || closePhase === 'revealing'
@@ -197,15 +235,21 @@ export default function ContactList({
 
   return (
     <div
-      className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}`}
+      className={`relative flex-1 min-h-0${measureOnly ? ' folder-stack-measure-root' : ''}${
+        folderDocked ? ' folder-view--docked' : ''
+      }`}
     >
       <main
         ref={scrollRef}
         className={`relative h-full w-full no-scrollbar overscroll-contain pb-[var(--app-pad-bottom)] ${
           showHomeHero ? '' : 'pt-[var(--app-pad-top)]'
+        }${
+          folderDocked ? ' folder-scroll--docked' : ''
         } ${
           blockPageScroll
-            ? 'overflow-y-hidden touch-pan-y'
+            ? folderDocked
+              ? 'overflow-visible touch-pan-y'
+              : 'overflow-y-hidden touch-pan-y'
             : useNativeScroll
               ? 'overflow-y-auto touch-pan-y'
               : 'overflow-y-auto touch-none'
@@ -216,6 +260,15 @@ export default function ContactList({
         onPointerUpCapture={onPointerUp}
         onPointerCancelCapture={onPointerUp}
       >
+        {isOverlayOpen && !closePhase && (
+          <button
+            type="button"
+            aria-label="Close folder"
+            className="folder-close-backdrop absolute inset-0 z-[10] cursor-default border-0 bg-transparent p-0"
+            onClick={handleClose}
+          />
+        )}
+
         <div
           className={`folder-files-layout${showHomeHero ? ' folder-files-layout--home-hero' : ''}`}
         >
@@ -308,10 +361,16 @@ export default function ContactList({
                 elasticOffset={elasticOffsets[index]}
                 shouldSuppressActivate={suppressNextClick}
                 onActivate={(el) => handleActivate(contact.id, el)}
+                onPromoteToSpread={(el) => handlePromoteToSpread(contact.id, el)}
+                focusAboveOverlay={activeId === contact.id && !closePhase}
+                spreadMode={spreadOpen && activeId === contact.id}
                 itemHidden={folderHidden}
                 itemEntering={folderEntering}
                 stackSiblingCollapsed={
                   stackSiblingsCollapsed && contact.id !== focusedFolderId
+                }
+                pocketInnerCards={
+                  contact.id !== focusedFolderId || !spreadOpen
                 }
               />
             )
@@ -320,12 +379,10 @@ export default function ContactList({
         </div>
       </main>
 
-      {isOverlayOpen && !closePhase && (
-        <button
-          type="button"
-          aria-label="返回"
-          className="absolute inset-0 z-[60] cursor-default border-0 bg-transparent p-0"
-          onClick={handleClose}
+      {spreadCardsVisible && spreadLayouts && (
+        <FolderSpreadCards
+          layouts={spreadLayouts}
+          closing={closePhase === 'folding'}
         />
       )}
     </div>

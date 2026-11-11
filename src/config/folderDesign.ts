@@ -19,13 +19,30 @@ export const FOLDER_DESIGN = {
   innerCardSkeletonLineSecondary: 8,
   innerCardSkeletonGap: 8,
   innerCardSkeletonBlockGap: 12,
+  spreadCardWidth: 200,
+  spreadCardHeight: 132,
+  spreadCardHiddenY: 48,
 } as const
 
+/** Pocket preview count when folder is not using spread overlay (legacy peek). */
 export const INNER_CARDS = [
   { rotate: -12, x: -14, delay: 0.32 },
   { rotate: -1, x: 0, delay: 0.48 },
   { rotate: 11, x: 16, delay: 0.64 },
 ] as const
+
+/** Active-folder spread stack — adjust count here later. */
+export const INNER_CARD_SPREAD_COUNT = 8
+
+export const INNER_CARD_SPREAD = {
+  rotateMin: -16,
+  rotateMax: 16,
+  offsetX: 42,
+  offsetY: 36,
+  delayBase: 0.22,
+  delayStep: 0.05,
+  delayJitter: 0.05,
+} as const
 
 export const designPx = (value: number, scale: number) => value * scale
 

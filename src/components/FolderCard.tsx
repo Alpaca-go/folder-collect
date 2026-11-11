@@ -26,8 +26,13 @@ interface FolderCardProps {
   revealDelay?: number
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
+  /** Second tap while active: dock folder and show spread cards. */
+  onPromoteToSpread?: (element: HTMLElement) => void
+  spreadMode?: boolean
   /** Close path: keep hidden siblings in stack slots (no inactive dive). */
   stackSiblingCollapsed?: boolean
+  /** When false, inner cards render in the spread overlay instead of the folder pocket. */
+  pocketInnerCards?: boolean
 }
 
 export default function FolderCard({
@@ -39,7 +44,10 @@ export default function FolderCard({
   revealDelay = 0,
   shouldSuppressActivate,
   onActivate,
+  onPromoteToSpread,
+  spreadMode = false,
   stackSiblingCollapsed = false,
+  pocketInnerCards = true,
 }: FolderCardProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const isCentered = mode === 'active' || mode === 'closing'
@@ -134,6 +142,19 @@ export default function FolderCard({
         />
       )}
 
+      {mode === 'active' && !spreadMode && onPromoteToSpread && (
+        <button
+          type="button"
+          aria-label={`Expand ${name}`}
+          className="absolute inset-0 z-40 cursor-pointer border-0 bg-transparent p-0"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation()
+            if (rootRef.current) onPromoteToSpread(rootRef.current)
+          }}
+        />
+      )}
+
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
         <FolderPanelBack flapOpen={isFlapOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
         <FolderStackLabel name={name} flipped={stackFlipped} />
@@ -155,7 +176,9 @@ export default function FolderCard({
         />
       )}
 
-      {showInnerCards && <FolderInnerCards closing={mode === 'closing'} />}
+      {showInnerCards && pocketInnerCards && (
+        <FolderInnerCards closing={mode === 'closing'} />
+      )}
 
       <motion.div
         className="folder-panel-front absolute inset-0 z-20 pointer-events-none"

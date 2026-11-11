@@ -28,6 +28,10 @@
   background-color: var(--color-app-bg);
 }
 
+.app-view-layer:has(.folder-scroll--docked) {
+  overflow: visible;
+}
+
 .app-inline-pad {
   padding-left: var(--app-header-pad-x);
   padding-right: var(--app-header-pad-right);

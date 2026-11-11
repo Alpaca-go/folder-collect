@@ -12,9 +12,13 @@ interface StackFolderItemProps {
   elasticOffset: MotionValue<number>
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
+  onPromoteToSpread?: (element: HTMLElement) => void
+  focusAboveOverlay?: boolean
+  spreadMode?: boolean
   itemHidden?: boolean
   itemEntering?: boolean
   stackSiblingCollapsed?: boolean
+  pocketInnerCards?: boolean
 }
 
 export default function StackFolderItem({
@@ -27,9 +31,13 @@ export default function StackFolderItem({
   elasticOffset,
   shouldSuppressActivate,
   onActivate,
+  onPromoteToSpread,
+  focusAboveOverlay = false,
+  spreadMode = false,
   itemHidden = false,
   itemEntering = false,
   stackSiblingCollapsed = false,
+  pocketInnerCards = true,
 }: StackFolderItemProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -45,7 +53,7 @@ export default function StackFolderItem({
       data-folder-index={index}
       className={`elastic-folder-wrapper${itemHidden ? ' opacity-0 pointer-events-none' : ''}${
         itemEntering ? ' folder-tail-enter' : ''
-      }`}
+      }${focusAboveOverlay ? ' elastic-folder-wrapper--active-focus' : ''}`}
     >
       <FolderCard
         name={name}
@@ -56,7 +64,10 @@ export default function StackFolderItem({
         revealDelay={revealDelay}
         shouldSuppressActivate={shouldSuppressActivate}
         onActivate={onActivate}
+        onPromoteToSpread={onPromoteToSpread}
+        spreadMode={spreadMode}
         stackSiblingCollapsed={stackSiblingCollapsed}
+        pocketInnerCards={pocketInnerCards}
       />
     </div>
   )

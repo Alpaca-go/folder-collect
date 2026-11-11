@@ -34,7 +34,7 @@ export default function PhoneFrame({
           <img src={cabinetBackgroundUrl} alt="" draggable={false} />
         </div>
       )}
-      <div className="relative z-[1] flex min-h-0 flex-1 flex-col">
+      <div className="relative z-[1] flex min-h-0 flex-1 flex-col overflow-visible">
       <ContactList
         onBack={onBack}
         stackHidden={stackHidden}
