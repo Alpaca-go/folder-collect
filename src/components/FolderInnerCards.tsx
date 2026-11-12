@@ -3,10 +3,11 @@ import { motion } from 'framer-motion'
 import {
   designPx,
   FOLDER_DESIGN,
+  INNER_CARD_INTRO,
   INNER_CARDS,
   innerCardHiddenY,
   innerCardPeekY,
-  innerCardSize,
+  innerCardSizeLandscape,
 } from '../config/folderDesign'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
@@ -95,7 +96,7 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
   usePocketClipMask(pocketRef)
   const { scale, folderHeight } = useFolderLayoutMetrics(pocketRef)
 
-  const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
+  const { width: cardWidth, height: cardHeight } = innerCardSizeLandscape(scale)
   const hiddenY = innerCardHiddenY(cardHeight, scale)
   const peekY = innerCardPeekY(cardHeight, scale)
   const radius = designPx(FOLDER_DESIGN.innerCardRadius, scale)
@@ -124,7 +125,18 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
         }}
         data-inner-pocket-floor
       >
-      {INNER_CARDS.map((card, i) => (
+      {INNER_CARDS.map((card, i) => {
+        const layerX =
+          designPx(FOLDER_DESIGN.innerCardPocketAnchorX + card.x, scale)
+        const layerY =
+          peekY + designPx(FOLDER_DESIGN.innerCardPocketAnchorY + card.y, scale)
+        const buryY =
+          hiddenY + designPx(FOLDER_DESIGN.innerCardPocketAnchorY + card.y, scale)
+        const introDelay =
+          INNER_CARD_INTRO.rotateDelayBase + i * INNER_CARD_INTRO.rotateStaggerSec
+        const introFrom = FOLDER_DESIGN.innerCardIntroRotateFrom
+
+        return (
         <motion.div
           key={i}
           layout={false}
@@ -134,44 +146,85 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
             left: '50%',
             width: cardWidth,
             height: cardHeight,
-            marginLeft: -cardWidth / 2,
+            marginLeft: -cardWidth,
             bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
             zIndex: i + 1,
-            transformOrigin: '50% 100%',
+            transformOrigin: '100% 100%',
             borderRadius: radius,
             boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
           }}
-          initial={{ y: hiddenY, opacity: 0, rotate: 0, scale: 0.92, x: 0 }}
+          initial={{
+            y: buryY,
+            opacity: 1,
+            rotate: introFrom,
+            scale: 0.94,
+            x: layerX,
+          }}
           animate={
             closing
-              ? { y: hiddenY, opacity: 0, rotate: 0, scale: 0.92, x: 0 }
+              ? {
+                  y: buryY,
+                  opacity: 1,
+                  rotate: introFrom,
+                  scale: 0.94,
+                  x: layerX,
+                }
               : {
-                  y: peekY,
+                  y: layerY,
                   opacity: 1,
                   rotate: card.rotate,
                   scale: 1,
-                  x: designPx(card.x, scale),
+                  x: layerX,
                 }
           }
           transition={
             closing
               ? {
-                  delay: (INNER_CARDS.length - 1 - i) * 0.07,
-                  type: 'spring',
-                  stiffness: 380,
-                  damping: 32,
+                  rotate: {
+                    delay: (INNER_CARDS.length - 1 - i) * 0.05,
+                    type: 'tween',
+                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.85,
+                    ease: [...INNER_CARD_INTRO.rotateEaseClose],
+                  },
+                  y: {
+                    delay: (INNER_CARDS.length - 1 - i) * 0.05,
+                    type: 'tween',
+                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.85,
+                    ease: [0.4, 0, 0.2, 1],
+                  },
+                  scale: {
+                    delay: (INNER_CARDS.length - 1 - i) * 0.05,
+                    type: 'tween',
+                    duration: 0.32,
+                    ease: [0.4, 0, 0.2, 1],
+                  },
                 }
               : {
-                  delay: card.delay,
-                  type: 'spring',
-                  stiffness: 320,
-                  damping: 24,
+                  rotate: {
+                    delay: introDelay,
+                    type: 'tween',
+                    duration: INNER_CARD_INTRO.rotateDurationSec,
+                    ease: [...INNER_CARD_INTRO.rotateEaseOpen],
+                  },
+                  y: {
+                    delay: introDelay + 0.03,
+                    type: 'tween',
+                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.9,
+                    ease: [...INNER_CARD_INTRO.rotateEaseOpen],
+                  },
+                  scale: {
+                    delay: introDelay,
+                    type: 'tween',
+                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.85,
+                    ease: [...INNER_CARD_INTRO.rotateEaseOpen],
+                  },
                 }
           }
         >
           <FolderInnerCardFace scale={scale} />
         </motion.div>
-      ))}
+        )
+      })}
       </div>
     </div>
   )

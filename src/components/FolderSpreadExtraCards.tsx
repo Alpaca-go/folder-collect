@@ -3,18 +3,15 @@ import {
   designPx,
   FOLDER_DESIGN,
   INNER_POCKET_CARD_COUNT,
-  innerCardSize,
+  innerCardFaceScaleFromWidth,
 } from '../config/folderDesign'
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
+import type { PocketCardSize } from '../utils/measureScreenCardPins'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
 interface FolderSpreadExtraCardsProps {
   layouts: SpreadCardLayout[]
-  folderScale: number
-}
-
-function pocketCardSize(folderScale: number) {
-  return innerCardSize(folderScale)
+  cardSize: PocketCardSize
 }
 
 function extraCardPose(index: number, visible: boolean) {
@@ -40,12 +37,13 @@ function extraCardPose(index: number, visible: boolean) {
 /** Five cards (index 3–7) fade in; pocket trio stays on pinned DOM clones. */
 export default function FolderSpreadExtraCards({
   layouts,
-  folderScale,
+  cardSize,
 }: FolderSpreadExtraCardsProps) {
-  const pocketSize = pocketCardSize(folderScale)
-  const radius = designPx(FOLDER_DESIGN.innerCardRadius, folderScale)
-  const shadowY = designPx(FOLDER_DESIGN.innerCardShadowY, folderScale)
-  const shadowBlur = designPx(FOLDER_DESIGN.innerCardShadowBlur, folderScale)
+  const faceScale = innerCardFaceScaleFromWidth(cardSize.width)
+  const { width, height } = cardSize
+  const radius = designPx(FOLDER_DESIGN.innerCardRadius, faceScale)
+  const shadowY = designPx(FOLDER_DESIGN.innerCardShadowY, faceScale)
+  const shadowBlur = designPx(FOLDER_DESIGN.innerCardShadowBlur, faceScale)
 
   return (
     <div
@@ -59,7 +57,6 @@ export default function FolderSpreadExtraCards({
 
             const start = extraCardPose(i, false)
             const end = extraCardPose(i, true)
-            const { width, height } = pocketSize
 
             return (
               <motion.div
@@ -97,7 +94,7 @@ export default function FolderSpreadExtraCards({
                   default: { type: 'spring', stiffness: 300, damping: 28 },
                 }}
               >
-                <FolderInnerCardFace scale={folderScale} />
+                <FolderInnerCardFace scale={faceScale} />
               </motion.div>
             )
           })}

@@ -1,8 +1,15 @@
 import { INNER_POCKET_CARD_COUNT } from '../config/folderDesign'
 
+export type PocketCardSize = {
+  width: number
+  height: number
+}
+
 export type ScreenPocketPin = {
   /** Aligned clone nodes — append to `document.body`. */
   nodes: HTMLElement[]
+  /** Layout size of pocket cards — same basis as pinned clones. */
+  cardSize: PocketCardSize
 }
 
 function alignAndCloneCard(el: HTMLElement, tempHost: HTMLElement, zIndex: number): HTMLElement {
@@ -57,7 +64,8 @@ export function measureScreenPocketPin(folderEl: HTMLElement): ScreenPocketPin |
 
   try {
     const nodes = cards.map((el, i) => alignAndCloneCard(el, tempHost, 56 + i))
-    return { nodes }
+    const cardSize = { width: cards[0].offsetWidth, height: cards[0].offsetHeight }
+    return { nodes, cardSize }
   } finally {
     tempHost.remove()
   }
