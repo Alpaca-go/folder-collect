@@ -1,6 +1,10 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { FOLDER_DESIGN, folderHeightRatio } from '../config/folderDesign'
+import {
+  FOLDER_DESIGN,
+  folderHeightRatio,
+  innerCardPocketFlapStartMs,
+} from '../config/folderDesign'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import FolderInnerCards from './FolderInnerCards'
 import FolderStackLabel from './FolderStackLabel'
@@ -49,12 +53,35 @@ export default function FolderCard({
   pocketInnerCards = true,
 }: FolderCardProps) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const [flapHeldOpenForPocket, setFlapHeldOpenForPocket] = useState(false)
+  /** Back trim stays open until the front flap finishes closing (avoids clip vs hinge mismatch). */
+  const [backFlapClipOpen, setBackFlapClipOpen] = useState(false)
   const isCentered = mode === 'active' || mode === 'closing'
-  const isFlapOpen = mode === 'active'
+  const isPocketClosing = mode === 'closing'
+  const frontFlapOpen = mode === 'active' || flapHeldOpenForPocket
   const showInnerCards = mode === 'active' || mode === 'closing'
+
+  useEffect(() => {
+    if (mode !== 'closing') {
+      setFlapHeldOpenForPocket(false)
+      return
+    }
+    setFlapHeldOpenForPocket(true)
+    const pocketCloseMs = innerCardPocketFlapStartMs()
+    const timer = window.setTimeout(() => setFlapHeldOpenForPocket(false), pocketCloseMs)
+    return () => window.clearTimeout(timer)
+  }, [mode])
+
+  useEffect(() => {
+    if (frontFlapOpen) {
+      setBackFlapClipOpen(true)
+    } else if (mode !== 'closing') {
+      setBackFlapClipOpen(false)
+    }
+  }, [frontFlapOpen, mode])
   const revealDelaySec = revealDelay / 1000
-  const useStackShadow = !isCentered && !isFlapOpen && !isLast
-  const usePanelShadow = !isCentered && !isFlapOpen
+  const useStackShadow = !isCentered && !frontFlapOpen && !isLast
+  const usePanelShadow = !isCentered && !frontFlapOpen
   const stackFlipped = stackLayerHorizontallyFlipped(index)
   const stackScale =
     isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE
@@ -120,7 +147,7 @@ export default function FolderCard({
         zIndex: isCentered || mode === 'returning' ? 100 : stackZIndexForIndex(index),
         transformPerspective: FOLDER_PERSPECTIVE,
         transformOrigin: '50% 0%',
-        overflow: showInnerCards ? 'visible' : undefined,
+        overflow: mode === 'active' || mode === 'closing' ? 'visible' : undefined,
         pointerEvents:
           mode === 'inactive' || mode === 'closing' || mode === 'returning' ? 'none' : 'auto',
         aspectRatio: FOLDER_ASPECT_RATIO,
@@ -156,7 +183,7 @@ export default function FolderCard({
       )}
 
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
-        <FolderPanelBack flapOpen={isFlapOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
+        <FolderPanelBack flapOpen={backFlapClipOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
         <FolderStackLabel name={name} flipped={stackFlipped} />
       </div>
 
@@ -177,7 +204,7 @@ export default function FolderCard({
       )}
 
       {showInnerCards && pocketInnerCards && (
-        <FolderInnerCards closing={mode === 'closing'} />
+        <FolderInnerCards closing={isPocketClosing} />
       )}
 
       <motion.div
@@ -188,12 +215,23 @@ export default function FolderCard({
           transformStyle: 'preserve-3d',
           backfaceVisibility: 'hidden',
         }}
-        animate={{ rotateX: isFlapOpen ? ACTIVE_FLAP_ROTATE_X : 0 }}
-        transition={{
-          type: 'spring',
-          stiffness: mode === 'closing' ? 300 : 240,
-          damping: mode === 'closing' ? 30 : 26,
-          delay: isFlapOpen ? 0.1 : 0,
+        animate={{ rotateX: frontFlapOpen ? ACTIVE_FLAP_ROTATE_X : 0 }}
+        transition={
+          frontFlapOpen
+            ? {
+                type: 'spring',
+                stiffness: 240,
+                damping: 26,
+                delay: mode === 'active' ? 0.1 : 0,
+              }
+            : {
+                type: 'tween',
+                duration: 0.46,
+                ease: [0.42, 0, 0.18, 1],
+              }
+        }
+        onAnimationComplete={() => {
+          if (!frontFlapOpen) setBackFlapClipOpen(false)
         }}
       >
         <FolderPanelFront stackShadow={useStackShadow ? 'default' : 'off'} />

@@ -20,9 +20,9 @@ import {
   type SpreadCardLayout,
 } from '../utils/innerCardSpread'
 import {
-  INNER_CARD_SPREAD_COUNT,
-  INNER_POCKET_CARD_COUNT,
+  FLAP_CLOSE_SETTLE_MS,
   SPREAD_PROMOTE,
+  innerCardPocketFlapStartMs,
 } from '../config/folderDesign'
 import {
   pinnedPocketCardsClusterLocal,
@@ -33,8 +33,7 @@ import CabinetHomeHero from './cabinet/CabinetHomeHero'
 import BackToCabinetButton from './cabinet/BackToCabinetButton'
 import FolderSpreadCards, { type SpreadPromotePhase } from './FolderSpreadCards'
 
-const FOLD_DURATION_MS = 520
-const RETURN_OVERLAP_MS = 90
+const FOLD_DURATION_MS = innerCardPocketFlapStartMs() + FLAP_CLOSE_SETTLE_MS
 const RETURN_DURATION_MS = 560
 /** How early (ms) stack siblings may start revealing before return spring ends. */
 const REVEAL_OVERLAP_MS = 48
@@ -137,16 +136,7 @@ export default function ContactList({
   const scheduleSpreadPromote = () => {
     clearSpreadTimers()
 
-    const extraCount = INNER_CARD_SPREAD_COUNT - INNER_POCKET_CARD_COUNT
-    const extraInTailMs =
-      SPREAD_PROMOTE.extraInDurationMs + Math.max(0, extraCount - 1) * SPREAD_PROMOTE.extraInStaggerMs
-    const gatherStartMs = SPREAD_PROMOTE.folderDockSettleMs + extraInTailMs
-
-    spreadTimersRef.current.push(
-      window.setTimeout(() => {
-        setSpreadPhase('extra-in')
-      }, SPREAD_PROMOTE.folderDockSettleMs),
-    )
+    const gatherStartMs = SPREAD_PROMOTE.folderDockSettleMs
 
     spreadTimersRef.current.push(
       window.setTimeout(() => {
@@ -180,7 +170,8 @@ export default function ContactList({
     const activeIndex = contacts.findIndex((contact) => contact.id === activeId)
     const maxRevealSteps = activeIndex >= 0 ? getMaxRevealSteps(activeIndex, contacts.length) : 0
     const totalRevealMs = REVEAL_DURATION_MS + maxRevealSteps * REVEAL_STAGGER_MS
-    const returnStartMs = FOLD_DURATION_MS - RETURN_OVERLAP_MS
+    /** Wait for pocket tuck + flap close before tilting folder back into the stack. */
+    const returnStartMs = FOLD_DURATION_MS
     const returnEndMs = returnStartMs + RETURN_DURATION_MS
     const revealStartMs = returnEndMs - REVEAL_OVERLAP_MS
 

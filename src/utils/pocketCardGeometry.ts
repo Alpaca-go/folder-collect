@@ -2,8 +2,9 @@ import {
   designPx,
   FOLDER_DESIGN,
   INNER_CARDS,
-  innerCardPeekY,
-  innerCardSizeLandscape,
+  innerCardPeekYForPose,
+  innerCardPocketRestRotate,
+  innerCardSize,
 } from '../config/folderDesign'
 
 export type PocketCardMeasure = {
@@ -75,29 +76,30 @@ export function pocketCardsClusterLocal(
 ): PocketCardMeasure[] {
   const rect = folderEl.getBoundingClientRect()
   const scale = rect.width / FOLDER_DESIGN.width
-  const { width: cardWidth, height: cardHeight } = innerCardSizeLandscape(scale)
+  const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
   const pocketBottom = rect.top + rect.height * (1 - 16 / FOLDER_DESIGN.height)
-  const peekY = innerCardPeekY(cardHeight, scale)
   const pocketCenterX = rect.left + rect.width / 2
 
   return INNER_CARDS.map((card) => {
+    const restRotate = innerCardPocketRestRotate(card.rotate)
+    const peekY = innerCardPeekYForPose(cardWidth, cardHeight, restRotate, scale)
     const anchorX =
       pocketCenterX + designPx(FOLDER_DESIGN.innerCardPocketAnchorX + card.x, scale)
-    const anchorY =
+    const pivotY =
       pocketBottom +
       peekY +
       designPx(FOLDER_DESIGN.innerCardPocketAnchorY + card.y, scale)
-    const rad = (card.rotate * Math.PI) / 180
+    const rad = (restRotate * Math.PI) / 180
     const sin = Math.sin(rad)
     const cos = Math.cos(rad)
-    const offsetX = -cardWidth / 2
+    const offsetX = cardWidth / 2
     const offsetY = -cardHeight / 2
     const centerX = anchorX + offsetX * cos - offsetY * sin
-    const centerY = anchorY + offsetX * sin + offsetY * cos
+    const centerY = pivotY + offsetX * sin + offsetY * cos
     return {
       x: centerX - clusterOrigin.x,
       y: centerY - clusterOrigin.y,
-      rotate: card.rotate,
+      rotate: restRotate,
       width: cardWidth,
       height: cardHeight,
     }

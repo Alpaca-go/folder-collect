@@ -8,16 +8,18 @@ export const FOLDER_DESIGN = {
   stackOverlap: 160,
   stackBottomTrim: 170,
   /** Card width = folder width × ratio; height = width × heightPerWidth (2:3 portrait). */
-  innerCardWidthOfFolder: 0.5,
+  innerCardWidthOfFolder: 0.52,
   innerCardHeightPerWidth: 1.5,
   /** Visible strip above pocket floor when folder is open (design px @ folder width). */
   innerCardPeekVisibleHeight: 200,
   /** Bottom-right fan pivot: offset right from folder center (design px @ folder width). */
-  innerCardPocketAnchorX: 104,
+  innerCardPocketAnchorX: 115,
   /** Nudge pocket fan down from floor line (design px @ folder width; positive = lower). */
-  innerCardPocketAnchorY: 28,
-  /** Open: tucked angle (deg) before fanning about bottom-right. */
-  innerCardIntroRotateFrom: -34,
+  innerCardPocketAnchorY: 295,
+  /** Portrait card laid horizontal in pocket (deg); fan offsets in INNER_CARDS.rotate are added. */
+  innerCardPocketBaseRotate: -90,
+  /** Extra tuck (deg) on top of base before fan-in. */
+  innerCardIntroRotateTuck: -34,
   innerCardInsetX: 8,
   innerCardRadius: 12,
   innerCardShadowY: 4,
@@ -28,31 +30,68 @@ export const FOLDER_DESIGN = {
   innerCardSkeletonGap: 8,
   innerCardSkeletonBlockGap: 12,
   spreadCardHiddenY: 48,
+  /** Extra slide into pocket on folder close (design px @ folder width). */
+  innerCardCloseBuryExtra: 36,
 } as const
 
 /**
- * Landscape fan from each card's bottom-right pivot (`transformOrigin: 100% 100%`).
- * Back = least tilt; front = most CCW. Optional x/y nudge (design px @ folder width).
+ * Fan offsets once horizontal (design px @ folder width).
+ * Pivot: visual bottom-right at rest → element `transformOrigin: 0% 100%` (bottom-left).
  */
+/** Shared BL pivot — fan only via `rotate` (deg above horizontal base). */
 export const INNER_CARDS = [
-  { rotate: 5, x: 0, y: 0, delay: 0.32 },
-  { rotate: 10, x: 18, y: -2, delay: 0.48 },
-  { rotate: 15, x: 36, y: -6, delay: 0.64 },
+  { rotate: 0, x: 0, y: 0, delay: 0.32 },
+  { rotate: 5, x: 14, y: 0, delay: 0.48 },
+  { rotate: 10, x: 28, y: 0, delay: 0.64 },
 ] as const
 
 /** Pocket cards rotate in one-by-one (seconds). */
 export const INNER_CARD_INTRO = {
-  rotateDelayBase: 0.14,
-  rotateStaggerSec: 0.1,
-  /** Total rotate-in span — longer = more visible “fast then creep” tail. */
-  rotateDurationSec: 1.05,
-  /** Cubic-bezier — sharp launch, long slow settle (open). */
-  rotateEaseOpen: [0.02, 0.98, 0.07, 1] as const,
+  rotateDelayBase: 0.1,
+  rotateStaggerSec: 0.07,
+  rotateDurationSec: 0.58,
+  /** Punchy ease-out with a shorter tail so the whole move finishes quicker (open). */
+  rotateEaseOpen: [0.1, 0.96, 0.48, 1] as const,
   rotateEaseClose: [0.42, 0, 0.16, 1] as const,
+  rotateCloseDurationSec: 1.02,
+  rotateCloseStaggerSec: 0.12,
+  /** Fade / bury tail after the slowest card starts tucking. */
+  rotateCloseTailSec: 0.32,
 } as const
 
-/** Active-folder spread stack — adjust count here later. */
-export const INNER_CARD_SPREAD_COUNT = 8
+/** When the slowest pocket tuck (rotate / bury) finishes — flap may close immediately after. */
+export function innerCardPocketTuckDoneMs(
+  cardCount: number = INNER_POCKET_CARD_COUNT,
+): number {
+  const { rotateCloseDurationSec, rotateCloseStaggerSec } = INNER_CARD_INTRO
+  const lastStartSec = Math.max(0, cardCount - 1) * rotateCloseStaggerSec
+  return (lastStartSec + rotateCloseDurationSec) * 1000
+}
+
+/** Full pocket-out including opacity tail (not used to delay the flap). */
+export function innerCardPocketCloseSpanMs(
+  cardCount: number = INNER_POCKET_CARD_COUNT,
+): number {
+  const tuckMs = innerCardPocketTuckDoneMs(cardCount)
+  return tuckMs + INNER_CARD_INTRO.rotateCloseTailSec * 1000
+}
+
+/** Front flap tween (0.46s) + small settle before stack return. */
+export const FLAP_CLOSE_SETTLE_MS = 480
+
+/** Start closing the flap before the slowest tuck fully ends (overlap ms). */
+export const INNER_CARD_FLAP_CLOSE_LEAD_MS = 720
+
+export function innerCardPocketFlapStartMs(
+  cardCount: number = INNER_POCKET_CARD_COUNT,
+): number {
+  return Math.max(0, innerCardPocketTuckDoneMs(cardCount) - INNER_CARD_FLAP_CLOSE_LEAD_MS)
+}
+
+export const INNER_POCKET_CARD_COUNT = 3
+
+/** Active-folder spread stack (matches pocket count). */
+export const INNER_CARD_SPREAD_COUNT = INNER_POCKET_CARD_COUNT
 
 export const INNER_CARD_SPREAD = {
   rotateMin: -16,
@@ -66,11 +105,9 @@ export const INNER_CARD_SPREAD = {
   gatherDelayStep: 0.045,
 } as const
 
-export const INNER_POCKET_CARD_COUNT = 3
-
-/** Spread promote: dive → hold → 5 cards fade in → 8-card gather. */
+/** Spread promote: dock settle → pocket cards gather. */
 export const SPREAD_PROMOTE = {
-  /** After dock: pinned trio stays still before extra cards appear. */
+  /** After dock: pinned pocket cards stay still before gather. */
   folderDockSettleMs: 560,
   extraInDurationMs: 420,
   /** Per-card delay step while extra-in (matches FolderSpreadCards). */
@@ -88,10 +125,12 @@ export function innerCardSize(scale: number) {
   return { width, height }
 }
 
-/** Pocket trio: portrait asset laid horizontal (swap w/h, no spin-in). */
-export function innerCardSizeLandscape(scale: number) {
-  const { width, height } = innerCardSize(scale)
-  return { width: height, height: width }
+export function innerCardPocketRestRotate(fanDeg: number) {
+  return FOLDER_DESIGN.innerCardPocketBaseRotate + fanDeg
+}
+
+export function innerCardPocketIntroRotate() {
+  return FOLDER_DESIGN.innerCardPocketBaseRotate + FOLDER_DESIGN.innerCardIntroRotateTuck
 }
 
 /** Skeleton / radius scale for a rendered card width (matches pocket `offsetWidth`). */
@@ -99,8 +138,8 @@ export function innerCardFaceScaleFromWidth(cardWidthPx: number) {
   return cardWidthPx / (FOLDER_DESIGN.width * FOLDER_DESIGN.innerCardWidthOfFolder)
 }
 
-/** Corner offsets (px) for a card with transform-origin bottom-center (50% 100%). */
-export function innerCardRotateBounds(
+/** Corner offsets (px) from bottom-left pivot (`transformOrigin: 0% 100%`). */
+export function innerCardRotateBoundsBottomLeft(
   cardWidth: number,
   cardHeight: number,
   rotateDeg: number,
@@ -109,13 +148,12 @@ export function innerCardRotateBounds(
   const sin = Math.sin(rad)
   const cos = Math.cos(rad)
   const corners: [number, number][] = [
-    [-cardWidth / 2, 0],
-    [cardWidth / 2, 0],
-    [-cardWidth / 2, -cardHeight],
-    [cardWidth / 2, -cardHeight],
+    [cardWidth, 0],
+    [0, -cardHeight],
+    [cardWidth, -cardHeight],
   ]
-  let minY = Infinity
-  let maxY = -Infinity
+  let minY = 0
+  let maxY = 0
   for (const [x, y] of corners) {
     const yp = -x * sin + y * cos
     minY = Math.min(minY, yp)
@@ -143,7 +181,7 @@ export function innerCardPeekYForPose(
   const peekVisible = designPx(FOLDER_DESIGN.innerCardPeekVisibleHeight, scale)
   const rad = (rotateDeg * Math.PI) / 180
   const sideways = Math.abs(Math.cos(rad)) < 0.35
-  const { minY } = innerCardRotateBounds(cardWidth, cardHeight, rotateDeg)
+  const { minY } = innerCardRotateBoundsBottomLeft(cardWidth, cardHeight, rotateDeg)
   const extentAbove = -minY
   let peekY = extentAbove - peekVisible
   if (sideways) {
@@ -162,7 +200,7 @@ export function innerCardHiddenYForPose(
   rotateDeg: number,
   scale: number,
 ) {
-  const { maxY } = innerCardRotateBounds(cardWidth, cardHeight, rotateDeg)
+  const { maxY } = innerCardRotateBoundsBottomLeft(cardWidth, cardHeight, rotateDeg)
   return innerCardPeekYForPose(cardWidth, cardHeight, rotateDeg, scale) + maxY + designPx(48, scale)
 }
 

@@ -3,17 +3,14 @@ import {
   designPx,
   FOLDER_DESIGN,
   INNER_CARD_SPREAD,
-  INNER_POCKET_CARD_COUNT,
-  SPREAD_PROMOTE,
   innerCardFaceScaleFromWidth,
 } from '../config/folderDesign'
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
-import { extraCardScatteredPose } from '../utils/extraCardIntro'
 import type { PocketCardMeasure } from '../utils/pocketCardGeometry'
 import type { PocketCardSize } from '../utils/measureScreenCardPins'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
-export type SpreadPromotePhase = 'extra-in' | 'gather' | 'settled'
+export type SpreadPromotePhase = 'gather' | 'settled'
 
 interface FolderSpreadCardsProps {
   layouts: SpreadCardLayout[]
@@ -44,10 +41,7 @@ export default function FolderSpreadCards({
       <div className="folder-spread-cards__stage">
         <div className="folder-spread-cards__cluster">
           {layouts.map((layout, i) => {
-            if (phase === 'extra-in' && i < INNER_POCKET_CARD_COUNT) {
-              return null
-            }
-            if (phase === 'gather' && i < INNER_POCKET_CARD_COUNT && !pocketHandoff?.[i]) {
+            if (phase === 'gather' && !pocketHandoff?.[i]) {
               return null
             }
 
@@ -73,39 +67,10 @@ export default function FolderSpreadCards({
                 stiffness: 380,
                 damping: 34,
               }
-            } else if (phase === 'extra-in' && i >= INNER_POCKET_CARD_COUNT) {
-              const slot = i - INNER_POCKET_CARD_COUNT
-              const start = extraCardScatteredPose(layout, slot, faceScale, 'hidden')
-              const end = extraCardScatteredPose(layout, slot, faceScale, 'visible')
-              initial = {
-                x: start.x,
-                y: start.y,
-                opacity: start.opacity,
-                rotate: start.rotate,
-                scale: start.scale,
-              }
-              animate = {
-                x: end.x,
-                y: end.y,
-                opacity: end.opacity,
-                rotate: end.rotate,
-                scale: end.scale,
-              }
-              transition = {
-                delay: slot * (SPREAD_PROMOTE.extraInStaggerMs / 1000),
-                opacity: { duration: 0.52, ease: [0.22, 0, 0.12, 1] },
-                default: { type: 'spring', stiffness: 280, damping: 26 },
-              }
             } else {
-              const slot = i - INNER_POCKET_CARD_COUNT
-              const scattered =
-                i >= INNER_POCKET_CARD_COUNT
-                  ? extraCardScatteredPose(layout, slot, faceScale, 'visible')
-                  : null
-              const startX = i < INNER_POCKET_CARD_COUNT && pocket ? pocket.x : scattered!.x
-              const startY = i < INNER_POCKET_CARD_COUNT && pocket ? pocket.y : scattered!.y
-              const startR =
-                i < INNER_POCKET_CARD_COUNT && pocket ? pocket.rotate : scattered!.rotate
+              const startX = pocket?.x ?? 0
+              const startY = pocket?.y ?? 0
+              const startR = pocket?.rotate ?? 0
 
               if (phase === 'gather') {
                 initial = {

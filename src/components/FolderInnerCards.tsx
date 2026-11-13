@@ -5,9 +5,11 @@ import {
   FOLDER_DESIGN,
   INNER_CARD_INTRO,
   INNER_CARDS,
-  innerCardHiddenY,
-  innerCardPeekY,
-  innerCardSizeLandscape,
+  innerCardHiddenYForPose,
+  innerCardPeekYForPose,
+  innerCardPocketIntroRotate,
+  innerCardPocketRestRotate,
+  innerCardSize,
 } from '../config/folderDesign'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
@@ -96,12 +98,23 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
   usePocketClipMask(pocketRef)
   const { scale, folderHeight } = useFolderLayoutMetrics(pocketRef)
 
-  const { width: cardWidth, height: cardHeight } = innerCardSizeLandscape(scale)
-  const hiddenY = innerCardHiddenY(cardHeight, scale)
-  const peekY = innerCardPeekY(cardHeight, scale)
+  const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
+  const introFrom = innerCardPocketIntroRotate()
   const radius = designPx(FOLDER_DESIGN.innerCardRadius, scale)
   const shadowY = designPx(FOLDER_DESIGN.innerCardShadowY, scale)
   const shadowBlur = designPx(FOLDER_DESIGN.innerCardShadowBlur, scale)
+  const pocketFanMaxDeg = Math.max(...INNER_CARDS.map((c) => c.rotate))
+  const sharedPeekY = innerCardPeekYForPose(
+    cardWidth,
+    cardHeight,
+    innerCardPocketRestRotate(pocketFanMaxDeg),
+    scale,
+  )
+  const sharedLayerY = sharedPeekY + designPx(FOLDER_DESIGN.innerCardPocketAnchorY, scale)
+  const sharedLayerX = designPx(FOLDER_DESIGN.innerCardPocketAnchorX, scale)
+  const buryY =
+    innerCardHiddenYForPose(cardWidth, cardHeight, introFrom, scale) +
+    designPx(FOLDER_DESIGN.innerCardPocketAnchorY + FOLDER_DESIGN.innerCardCloseBuryExtra, scale)
 
   return (
     <div
@@ -126,15 +139,10 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
         data-inner-pocket-floor
       >
       {INNER_CARDS.map((card, i) => {
-        const layerX =
-          designPx(FOLDER_DESIGN.innerCardPocketAnchorX + card.x, scale)
-        const layerY =
-          peekY + designPx(FOLDER_DESIGN.innerCardPocketAnchorY + card.y, scale)
-        const buryY =
-          hiddenY + designPx(FOLDER_DESIGN.innerCardPocketAnchorY + card.y, scale)
         const introDelay =
           INNER_CARD_INTRO.rotateDelayBase + i * INNER_CARD_INTRO.rotateStaggerSec
-        const introFrom = FOLDER_DESIGN.innerCardIntroRotateFrom
+        const restRotate = innerCardPocketRestRotate(card.rotate)
+        const layerX = sharedLayerX + designPx(card.x, scale)
 
         return (
         <motion.div
@@ -146,33 +154,32 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
             left: '50%',
             width: cardWidth,
             height: cardHeight,
-            marginLeft: -cardWidth,
             bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
             zIndex: i + 1,
-            transformOrigin: '100% 100%',
+            transformOrigin: '0% 100%',
             borderRadius: radius,
             boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
           }}
           initial={{
-            y: buryY,
+            y: sharedLayerY,
             opacity: 1,
             rotate: introFrom,
-            scale: 0.94,
+            scale: 0.96,
             x: layerX,
           }}
           animate={
             closing
               ? {
                   y: buryY,
-                  opacity: 1,
+                  opacity: 0,
                   rotate: introFrom,
                   scale: 0.94,
                   x: layerX,
                 }
               : {
-                  y: layerY,
+                  y: sharedLayerY,
                   opacity: 1,
-                  rotate: card.rotate,
+                  rotate: restRotate,
                   scale: 1,
                   x: layerX,
                 }
@@ -181,21 +188,29 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
             closing
               ? {
                   rotate: {
-                    delay: (INNER_CARDS.length - 1 - i) * 0.05,
+                    delay: (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec,
                     type: 'tween',
-                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.85,
+                    duration: INNER_CARD_INTRO.rotateCloseDurationSec,
                     ease: [...INNER_CARD_INTRO.rotateEaseClose],
                   },
                   y: {
-                    delay: (INNER_CARDS.length - 1 - i) * 0.05,
+                    delay: (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec,
                     type: 'tween',
-                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.85,
-                    ease: [0.4, 0, 0.2, 1],
+                    duration: INNER_CARD_INTRO.rotateCloseDurationSec,
+                    ease: [0.38, 0, 0.16, 1],
+                  },
+                  opacity: {
+                    delay:
+                      (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec +
+                      INNER_CARD_INTRO.rotateCloseDurationSec * 0.35,
+                    type: 'tween',
+                    duration: INNER_CARD_INTRO.rotateCloseTailSec,
+                    ease: 'easeIn',
                   },
                   scale: {
-                    delay: (INNER_CARDS.length - 1 - i) * 0.05,
+                    delay: (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec,
                     type: 'tween',
-                    duration: 0.32,
+                    duration: INNER_CARD_INTRO.rotateCloseDurationSec * 0.9,
                     ease: [0.4, 0, 0.2, 1],
                   },
                 }
@@ -206,17 +221,11 @@ export default function FolderInnerCards({ closing = false }: FolderInnerCardsPr
                     duration: INNER_CARD_INTRO.rotateDurationSec,
                     ease: [...INNER_CARD_INTRO.rotateEaseOpen],
                   },
-                  y: {
-                    delay: introDelay + 0.03,
-                    type: 'tween',
-                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.9,
-                    ease: [...INNER_CARD_INTRO.rotateEaseOpen],
-                  },
                   scale: {
                     delay: introDelay,
                     type: 'tween',
-                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.85,
-                    ease: [...INNER_CARD_INTRO.rotateEaseOpen],
+                    duration: INNER_CARD_INTRO.rotateDurationSec * 0.75,
+                    ease: [0.45, 0, 0.25, 1],
                   },
                 }
           }
