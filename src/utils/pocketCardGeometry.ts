@@ -127,6 +127,33 @@ export type ScreenFixedPose = {
   left: number
   top: number
   rotate: number
+  /** Painted layout size when lifted to `position: fixed` (includes folder scale). */
+  width?: number
+  height?: number
+}
+
+/** Uniform scale from a CSS transform matrix (handles flipped stack layers). */
+export function elementUniformScale(el: HTMLElement): number {
+  const transform = getComputedStyle(el).transform
+  if (!transform || transform === 'none') return 1
+  const raw = transform.startsWith('matrix3d(')
+    ? transform.slice(9, -1).split(',').map((s) => parseFloat(s.trim()))
+    : transform.startsWith('matrix(')
+      ? transform.slice(7, -1).split(',').map((s) => parseFloat(s.trim()))
+      : null
+  if (!raw || raw.length < 2) return 1
+  return Math.hypot(raw[0], raw[1])
+}
+
+export function pocketCardVisualBoxSize(el: HTMLElement): { width: number; height: number } {
+  const folder = el.closest<HTMLElement>('[data-purpose="contact-card"]')
+  const parentU = folder ? elementUniformScale(folder) : 1
+  const localU = elementUniformScale(el)
+  const u = parentU * localU
+  return {
+    width: el.offsetWidth * u,
+    height: el.offsetHeight * u,
+  }
 }
 
 /** Rotate card bounding box around a pivot (deg); updates position + self-rotation. */

@@ -1,5 +1,6 @@
 import { INNER_POCKET_CARD_COUNT } from '../config/folderDesign'
 import {
+  pocketCardVisualBoxSize,
   rotationDegFromTransform,
   type ScreenFixedPose,
 } from './pocketCardGeometry'
@@ -65,8 +66,7 @@ export function screenFixedPoseFromPocketCard(
 ): ScreenFixedPose {
   const target = el.getBoundingClientRect()
   const rotate = rotationDegFromTransform(getComputedStyle(el).transform)
-  const width = el.offsetWidth
-  const height = el.offsetHeight
+  const { width, height } = pocketCardVisualBoxSize(el)
 
   const tempHost = document.createElement('div')
   tempHost.setAttribute('aria-hidden', 'true')
@@ -98,7 +98,7 @@ export function screenFixedPoseFromPocketCard(
       left += target.left - painted.left
       top += target.top - painted.top
     }
-    return { left, top, rotate }
+    return { left, top, rotate, width, height }
   } finally {
     tempHost.remove()
   }

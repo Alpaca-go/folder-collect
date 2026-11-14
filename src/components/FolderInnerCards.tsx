@@ -207,7 +207,6 @@ export default function FolderInnerCards({
   }, [spreadPhase, spreadOrigin])
 
   const { scale, folderHeight } = useFolderLayoutMetrics(pocketRef)
-  const faceScale = innerCardFaceScaleFromWidth(innerCardSize(scale).width)
 
   const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
   const introFrom = innerCardPocketIntroRotate()
@@ -233,8 +232,16 @@ export default function FolderInnerCards({
     if (!from) return null
     if (!useCenterSpinLayout && (!layout || !spreadOrigin)) return null
 
+    const portalW = from.width ?? cardWidth
+    const portalH = from.height ?? cardHeight
+    const portalScale = portalW / cardWidth
+    const portalRadius = radius * portalScale
+    const portalShadowY = shadowY * portalScale
+    const portalShadowBlur = shadowBlur * portalScale
+    const portalFaceScale = innerCardFaceScaleFromWidth(portalW)
+
     const settled = layout && spreadOrigin
-      ? spreadLayoutScreenFixed(layout, spreadOrigin, cardWidth, cardHeight, faceScale)
+      ? spreadLayoutScreenFixed(layout, spreadOrigin, portalW, portalH, portalFaceScale)
       : from
     let target = settled
     if (spreadPhase === 'retract' && retractTargets?.[i]) {
@@ -246,9 +253,9 @@ export default function FolderInnerCards({
       const settled = centerSpinSettledPoses(
         spreadFrom!,
         pivot,
-        cardWidth,
-        cardHeight,
-        faceScale,
+        portalW,
+        portalH,
+        portalFaceScale,
         SPREAD_PROMOTE.centerRotateDeg,
       )
       target = settled[i] ?? from
@@ -266,12 +273,12 @@ export default function FolderInnerCards({
         className="absolute overflow-hidden border border-neutral-200/80 bg-white"
         style={{
           position: 'fixed',
-          width: cardWidth,
-          height: cardHeight,
+          width: portalW,
+          height: portalH,
           zIndex: 55 + i,
           transformOrigin: '50% 50%',
-          borderRadius: radius,
-          boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.14)`,
+          borderRadius: portalRadius,
+          boxShadow: `0 ${portalShadowY}px ${portalShadowBlur}px rgba(0,0,0,0.14)`,
         }}
         initial={
           useGatherSpring || useCenterSpinTween
@@ -313,7 +320,7 @@ export default function FolderInnerCards({
                   }
         }
       >
-        <FolderInnerCardFace scale={scale} />
+        <FolderInnerCardFace scale={scale * portalScale} />
       </motion.div>
     )
   }
