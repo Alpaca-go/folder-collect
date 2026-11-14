@@ -1,6 +1,9 @@
 import { useRef } from 'react'
 import { useMotionValueEvent, type MotionValue } from 'framer-motion'
 import FolderCard, { type FolderMode } from './FolderCard'
+import type { SpreadCardLayout } from '../utils/innerCardSpread'
+
+type PocketSpreadPhase = 'hold' | 'gather' | 'settled' | 'retract'
 
 interface StackFolderItemProps {
   index: number
@@ -15,10 +18,16 @@ interface StackFolderItemProps {
   onDockFolder?: (element: HTMLElement) => void
   focusAboveOverlay?: boolean
   folderDocked?: boolean
+  dockPinBaselineY?: number | null
+  spreadPhase?: PocketSpreadPhase | null
+  spreadLayouts?: SpreadCardLayout[] | null
+  spreadOrigin?: { x: number; y: number } | null
   itemHidden?: boolean
   itemEntering?: boolean
   stackSiblingCollapsed?: boolean
   pocketInnerCards?: boolean
+  /** Match spread undock duration — folder Y uses tween, not spring. */
+  centerYSyncUndock?: boolean
 }
 
 export default function StackFolderItem({
@@ -34,10 +43,15 @@ export default function StackFolderItem({
   onDockFolder,
   focusAboveOverlay = false,
   folderDocked = false,
+  dockPinBaselineY = null,
+  spreadPhase = null,
+  spreadLayouts = null,
+  spreadOrigin = null,
   itemHidden = false,
   itemEntering = false,
   stackSiblingCollapsed = false,
   pocketInnerCards = true,
+  centerYSyncUndock = false,
 }: StackFolderItemProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -66,8 +80,13 @@ export default function StackFolderItem({
         onActivate={onActivate}
         onDockFolder={onDockFolder}
         folderDocked={folderDocked}
+        dockPinBaselineY={dockPinBaselineY}
+        spreadPhase={spreadPhase}
+        spreadLayouts={spreadLayouts}
+        spreadOrigin={spreadOrigin}
         stackSiblingCollapsed={stackSiblingCollapsed}
         pocketInnerCards={pocketInnerCards}
+        centerYSyncUndock={centerYSyncUndock}
       />
     </div>
   )

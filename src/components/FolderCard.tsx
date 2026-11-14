@@ -4,12 +4,16 @@ import {
   FOLDER_DESIGN,
   folderHeightRatio,
   innerCardPocketFlapStartMs,
+  SPREAD_PROMOTE,
 } from '../config/folderDesign'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import FolderInnerCards from './FolderInnerCards'
 import FolderStackLabel from './FolderStackLabel'
 import { FolderPanelBack, FolderPanelFront } from './FolderPanelLayers'
 import { stackLayerHorizontallyFlipped, stackZIndexForIndex } from '../utils/folderMorph'
+import type { SpreadCardLayout } from '../utils/innerCardSpread'
+
+type PocketSpreadPhase = 'hold' | 'gather' | 'settled' | 'retract'
 
 const FOLDER_ROTATE_X = -40
 const FOLDER_PERSPECTIVE = 1200
@@ -30,12 +34,18 @@ interface FolderCardProps {
   revealDelay?: number
   shouldSuppressActivate?: () => boolean
   onActivate: (element: HTMLElement) => void
-  /** Second tap while active: dock folder; pocket cards stay fixed via portal clone. */
+  /** Second tap on flap while active: dock folder shell. */
   onDockFolder?: (element: HTMLElement) => void
   folderDocked?: boolean
+  /** centerOffsetY at dock start — pocket cards counter-translate to stay on screen. */
+  dockPinBaselineY?: number | null
+  spreadPhase?: PocketSpreadPhase | null
+  spreadLayouts?: SpreadCardLayout[] | null
+  spreadOrigin?: { x: number; y: number } | null
   /** Close path: keep hidden siblings in stack slots (no inactive dive). */
   stackSiblingCollapsed?: boolean
   pocketInnerCards?: boolean
+  centerYSyncUndock?: boolean
 }
 
 export default function FolderCard({
@@ -49,8 +59,13 @@ export default function FolderCard({
   onActivate,
   onDockFolder,
   folderDocked = false,
+  dockPinBaselineY = null,
+  spreadPhase = null,
+  spreadLayouts = null,
+  spreadOrigin = null,
   stackSiblingCollapsed = false,
   pocketInnerCards = true,
+  centerYSyncUndock = false,
 }: FolderCardProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [flapHeldOpenForPocket, setFlapHeldOpenForPocket] = useState(false)
@@ -80,12 +95,27 @@ export default function FolderCard({
     }
   }, [frontFlapOpen, mode])
   const revealDelaySec = revealDelay / 1000
-  const useStackShadow = !isCentered && !frontFlapOpen && !isLast
-  const usePanelShadow = !isCentered && !frontFlapOpen
+  const folderLifted = isCentered || folderDocked
+  const usePanelShadow = folderLifted || !frontFlapOpen
+  const useStackShadow = (folderLifted || !frontFlapOpen) && (!isLast || folderLifted)
   const stackFlipped = stackLayerHorizontallyFlipped(index)
   const stackScale =
     isCentered ? ACTIVE_SCALE : mode === 'inactive' ? STACK_SCALE * 0.92 : STACK_SCALE
   const canOpenFromStack = mode === 'default' || mode === 'revealing'
+  const pocketViewportPinY =
+    folderDocked && dockPinBaselineY != null ? -(centerOffsetY - dockPinBaselineY) : 0
+  const folderYOffsetTransition = centerYSyncUndock
+    ? {
+        type: 'tween' as const,
+        duration: SPREAD_PROMOTE.undockDurationMs / 1000,
+        ease: [0.42, 0, 0.18, 1] as const,
+      }
+    : {
+        type: 'spring' as const,
+        stiffness: mode === 'inactive' ? 260 : mode === 'active' ? 260 : 320,
+        damping: mode === 'inactive' ? 30 : mode === 'active' ? 28 : 32,
+        delay: 0,
+      }
 
   const handleTap = () => {
     if (rootRef.current && canOpenFromStack) onActivate(rootRef.current)
@@ -97,6 +127,8 @@ export default function FolderCard({
       className="relative w-full shrink-0 select-none [container-type:inline-size]"
       data-purpose="contact-card"
       data-index={index}
+      data-folder-lifted={folderLifted || undefined}
+      data-folder-docked={folderDocked || undefined}
       initial={false}
       animate={{
         y: isCentered
@@ -112,14 +144,20 @@ export default function FolderCard({
         scaleY: stackScale,
       }}
       transition={{
-        y: {
-          type: 'spring',
-          stiffness:
-            mode === 'revealing' ? 360 : mode === 'inactive' ? 260 : mode === 'returning' ? 280 : mode === 'active' ? 260 : 320,
-          damping:
-            mode === 'revealing' ? 24 : mode === 'inactive' ? 30 : mode === 'returning' ? 32 : mode === 'active' ? 28 : 32,
-          delay: mode === 'revealing' ? revealDelaySec : 0,
-        },
+        y: centerYSyncUndock
+          ? {
+              type: 'tween',
+              duration: SPREAD_PROMOTE.undockDurationMs / 1000,
+              ease: [0.42, 0, 0.18, 1],
+            }
+          : {
+              type: 'spring',
+              stiffness:
+                mode === 'revealing' ? 360 : mode === 'inactive' ? 260 : mode === 'returning' ? 280 : mode === 'active' ? 260 : 320,
+              damping:
+                mode === 'revealing' ? 24 : mode === 'inactive' ? 30 : mode === 'returning' ? 32 : mode === 'active' ? 28 : 32,
+              delay: mode === 'revealing' ? revealDelaySec : 0,
+            },
         rotateX: {
           type: 'spring',
           stiffness: mode === 'returning' ? 280 : mode === 'closing' ? 300 : mode === 'active' ? 260 : 320,
@@ -169,19 +207,6 @@ export default function FolderCard({
         />
       )}
 
-      {mode === 'active' && !folderDocked && onDockFolder && (
-        <button
-          type="button"
-          aria-label={`Dock ${name}`}
-          className="absolute inset-0 z-40 cursor-pointer border-0 bg-transparent p-0"
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation()
-            if (rootRef.current) onDockFolder(rootRef.current)
-          }}
-        />
-      )}
-
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
         <FolderPanelBack flapOpen={backFlapClipOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
         <FolderStackLabel name={name} flipped={stackFlipped} />
@@ -204,11 +229,22 @@ export default function FolderCard({
       )}
 
       {showInnerCards && pocketInnerCards && (
-        <FolderInnerCards closing={isPocketClosing} />
+        <FolderInnerCards
+          closing={isPocketClosing}
+          viewportPinY={pocketViewportPinY}
+          viewportPinTransition={folderYOffsetTransition}
+          holdPocketPose={folderDocked && spreadPhase === 'hold' && !isPocketClosing}
+          spreadPhase={spreadPhase}
+          spreadLayouts={spreadLayouts}
+          spreadOrigin={spreadOrigin}
+          folderDocked={folderDocked}
+        />
       )}
 
       <motion.div
-        className="folder-panel-front absolute inset-0 z-20 pointer-events-none"
+        className={`folder-panel-front absolute inset-0 z-20 ${
+          mode === 'active' && !folderDocked && onDockFolder ? '' : 'pointer-events-none'
+        }`}
         style={{
           transformPerspective: FOLDER_PERSPECTIVE,
           transformOrigin: '50% 100%',
@@ -234,6 +270,18 @@ export default function FolderCard({
           if (!frontFlapOpen) setBackFlapClipOpen(false)
         }}
       >
+        {mode === 'active' && !folderDocked && onDockFolder && (
+          <button
+            type="button"
+            aria-label={`Dock ${name}`}
+            className="absolute inset-0 z-40 cursor-pointer border-0 bg-transparent p-0"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (rootRef.current) onDockFolder(rootRef.current)
+            }}
+          />
+        )}
         <FolderPanelFront stackShadow={useStackShadow ? 'default' : 'off'} />
       </motion.div>
     </motion.div>

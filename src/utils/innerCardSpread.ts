@@ -1,4 +1,9 @@
-import { INNER_CARD_SPREAD, INNER_CARD_SPREAD_COUNT } from '../config/folderDesign'
+import {
+  INNER_CARD_SPREAD,
+  INNER_CARD_SPREAD_COUNT,
+  INNER_POCKET_CARD_COUNT,
+  INNER_SPREAD_EXTRA_CARD_COUNT,
+} from '../config/folderDesign'
 
 export type SpreadCardLayout = {
   rotate: number
@@ -32,19 +37,44 @@ export function generateSpreadCardLayouts(
   count = INNER_CARD_SPREAD_COUNT,
 ): SpreadCardLayout[] {
   const rand = mulberry32(seed)
-  const { rotateMin, rotateMax, offsetX, offsetY, delayBase, delayStep, delayJitter } =
-    INNER_CARD_SPREAD
+  const {
+    rotateMin,
+    rotateMax,
+    offsetX,
+    offsetY,
+    delayBase,
+    delayStep,
+    delayJitter,
+    gatherCenterPullPerStep,
+    gatherLeftReachRatio,
+    stackRearNudgeX,
+    stackRearNudgeY,
+  } = INNER_CARD_SPREAD
 
   return Array.from({ length: count }, (_, i) => {
     const rotate = rotateMin + rand() * (rotateMax - rotateMin)
-    const x = (rand() - 0.5) * 2 * offsetX
-    const y = (rand() - 0.5) * 2 * offsetY
+    const pull = Math.max(0.58, 1 - i * gatherCenterPullPerStep)
+    const capX = offsetX * pull
+    const capY = offsetY * pull
+    const rawX = (rand() - 0.5) * 2 * capX
+    const rawY = (rand() - 0.5) * 2 * capY
+    let x = Math.max(-capX * gatherLeftReachRatio, Math.min(capX, rawX))
+    let y = Math.max(-capY, Math.min(capY, rawY))
+    if (i === 0) {
+      x += stackRearNudgeX
+      y += stackRearNudgeY
+    }
+    const zIndex =
+      i < INNER_POCKET_CARD_COUNT
+        ? i + INNER_SPREAD_EXTRA_CARD_COUNT + 1
+        : i - INNER_POCKET_CARD_COUNT + 1
+
     return {
       rotate,
       x,
       y,
       delay: delayBase + i * delayStep + rand() * delayJitter,
-      zIndex: i + 1,
+      zIndex,
     }
   })
 }

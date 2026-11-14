@@ -21,7 +21,7 @@ export const FOLDER_DESIGN = {
   /** Extra tuck (deg) on top of base before fan-in. */
   innerCardIntroRotateTuck: -34,
   innerCardInsetX: 8,
-  innerCardRadius: 12,
+  innerCardRadius: 0,
   innerCardShadowY: 4,
   innerCardShadowBlur: 14,
   innerCardSkeletonPad: 14,
@@ -54,7 +54,7 @@ export const INNER_CARD_INTRO = {
   rotateEaseOpen: [0.1, 0.96, 0.48, 1] as const,
   rotateEaseClose: [0.42, 0, 0.16, 1] as const,
   rotateCloseDurationSec: 1.02,
-  rotateCloseStaggerSec: 0.12,
+  rotateCloseStaggerSec: 0.07,
   /** Fade / bury tail after the slowest card starts tucking. */
   rotateCloseTailSec: 0.32,
 } as const
@@ -90,31 +90,43 @@ export function innerCardPocketFlapStartMs(
 
 export const INNER_POCKET_CARD_COUNT = 3
 
-/** Active-folder spread stack (matches pocket count). */
-export const INNER_CARD_SPREAD_COUNT = INNER_POCKET_CARD_COUNT
+/** Extra stack revealed behind the pocket trio on dock. */
+export const INNER_SPREAD_EXTRA_CARD_COUNT = 0
+
+/** Pocket + extra cards animated into the spread fan. */
+export const INNER_CARD_SPREAD_COUNT = INNER_POCKET_CARD_COUNT + INNER_SPREAD_EXTRA_CARD_COUNT
 
 export const INNER_CARD_SPREAD = {
-  rotateMin: -16,
-  rotateMax: 16,
-  offsetX: 42,
-  offsetY: 36,
+  rotateMin: -6,
+  rotateMax: 6,
+  offsetX: 12,
+  offsetY: 10,
   delayBase: 0.22,
   delayStep: 0.05,
   delayJitter: 0.05,
-  gatherDelayBase: 0.06,
-  gatherDelayStep: 0.045,
+  gatherDelayBase: 0,
+  gatherDelayStep: 0.03,
+  /** Front card in the fan (higher index) stays closer to stage center. */
+  gatherCenterPullPerStep: 0.18,
+  /** Symmetric horizontal cap (left/right of center). */
+  gatherLeftReachRatio: 0.5,
+  /** Rear stack card (index 0): tiny center bias. Design px @ card face scale. */
+  stackRearNudgeX: 4,
+  stackRearNudgeY: -4,
 } as const
 
 /** Spread promote: dock settle → pocket cards gather. */
 export const SPREAD_PROMOTE = {
-  /** After dock: pinned pocket cards stay still before gather. */
-  folderDockSettleMs: 560,
+  /** Wait for folder dock dive before pocket cards gather/rotate to spread. */
+  folderDockSettleMs: 760,
   extraInDurationMs: 420,
   /** Per-card delay step while extra-in (matches FolderSpreadCards). */
   extraInStaggerMs: 80,
   /** Extra cards intro: start tighter, spring out to spread layout (0–1). */
   extraInClusterPull: 0.2,
   gatherDurationMs: 720,
+  /** Spread retract + folder undock before stack close (matches gather). */
+  undockDurationMs: 720,
 } as const
 
 export const designPx = (value: number, scale: number) => value * scale

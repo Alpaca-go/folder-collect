@@ -6,6 +6,7 @@ import {
   innerCardPocketRestRotate,
   innerCardSize,
 } from '../config/folderDesign'
+import type { SpreadCardLayout } from './innerCardSpread'
 
 export type PocketCardMeasure = {
   x: number
@@ -38,8 +39,7 @@ export function spreadClusterOriginFromHost(hostEl: HTMLElement): { x: number; y
   }
 }
 
-/** Pocket inner cards (0–2) in spread-cluster local coordinates. */
-function rotationDegFromTransform(transform: string): number {
+export function rotationDegFromTransform(transform: string): number {
   if (!transform || transform === 'none') return 0
   const raw = transform.startsWith('matrix3d(')
     ? transform.slice(9, -1).split(',').map((s) => parseFloat(s.trim()))
@@ -104,4 +104,37 @@ export function pocketCardsClusterLocal(
       height: cardHeight,
     }
   })
+}
+
+export type ScreenFixedPose = {
+  left: number
+  top: number
+  rotate: number
+}
+
+export function spreadLayoutScreenFixed(
+  layout: Pick<SpreadCardLayout, 'x' | 'y' | 'rotate'>,
+  clusterOrigin: { x: number; y: number },
+  cardWidth: number,
+  cardHeight: number,
+  faceScale: number,
+): ScreenFixedPose {
+  const cx = clusterOrigin.x + designPx(layout.x, faceScale)
+  const cy = clusterOrigin.y + designPx(layout.y, faceScale)
+  return {
+    left: cx - cardWidth / 2,
+    top: cy - cardHeight / 2,
+    rotate: layout.rotate,
+  }
+}
+
+export function pocketScreenFixedPoses(
+  folderEl: HTMLElement,
+  clusterOrigin: { x: number; y: number },
+): ScreenFixedPose[] {
+  return pocketCardsClusterLocal(folderEl, clusterOrigin).map((p) => ({
+    left: clusterOrigin.x + p.x - p.width / 2,
+    top: clusterOrigin.y + p.y - p.height / 2,
+    rotate: p.rotate,
+  }))
 }

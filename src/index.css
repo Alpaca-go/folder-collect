@@ -65,11 +65,23 @@ body {
 
 .folder-scroll--docked {
   overflow: visible !important;
+  /* Drop-shadow extends below the docked lip — keep it inside the scroll box. */
+  padding-bottom: calc(var(--app-pad-bottom) + 14px);
 }
 
 .folder-scroll--docked .folder-files-layout,
 .folder-scroll--docked #cards-stack {
   overflow: visible;
+}
+
+.folder-scroll--docked .elastic-folder-wrapper--active-focus,
+[data-purpose='contact-card'][data-folder-lifted],
+[data-purpose='contact-card'][data-folder-docked] {
+  overflow: visible;
+}
+
+[data-purpose='contact-card'][data-folder-lifted] .folder-panel-layer {
+  transform: translateZ(0);
 }
 
 .app-cabinet-backdrop {
@@ -217,6 +229,11 @@ body {
 .folder-spread-cards__card {
   left: 50%;
   top: 50%;
+}
+
+/* Undock: spread fan fades; pocket cards live on the rising folder underneath. */
+.folder-view--docked:has(.folder-spread-cards) .elastic-folder-wrapper--active-focus {
+  z-index: 56;
 }
 
 .folder-focus-glow {

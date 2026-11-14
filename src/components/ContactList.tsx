@@ -9,29 +9,19 @@ import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
 import { folderOffsetToDockPeek } from '../utils/folderDockOffset'
 import { MORPH_FOLDER_COUNT } from '../utils/folderMorph'
 import {
-  measureScreenPocketPin,
-  mountPinnedPocketNodes,
-  releasePinnedPocketNodes,
-  type PocketCardSize,
-} from '../utils/measureScreenCardPins'
-import {
   generateSpreadCardLayouts,
   hashFolderSeed,
   type SpreadCardLayout,
 } from '../utils/innerCardSpread'
 import {
   FLAP_CLOSE_SETTLE_MS,
+  INNER_POCKET_CARD_COUNT,
   SPREAD_PROMOTE,
   innerCardPocketFlapStartMs,
 } from '../config/folderDesign'
-import {
-  pinnedPocketCardsClusterLocal,
-  spreadClusterOriginFromHost,
-  type PocketCardMeasure,
-} from '../utils/pocketCardGeometry'
+import { spreadClusterOriginFromHost } from '../utils/pocketCardGeometry'
 import CabinetHomeHero from './cabinet/CabinetHomeHero'
 import BackToCabinetButton from './cabinet/BackToCabinetButton'
-import FolderSpreadCards, { type SpreadPromotePhase } from './FolderSpreadCards'
 
 const FOLD_DURATION_MS = innerCardPocketFlapStartMs() + FLAP_CLOSE_SETTLE_MS
 const RETURN_DURATION_MS = 560
@@ -43,7 +33,7 @@ const TAIL_ENTER_BATCH = 2
 
 type ClosePhase = 'folding' | 'returning' | 'revealing' | null
 
-type SpreadTimelinePhase = 'hold' | SpreadPromotePhase
+type SpreadTimelinePhase = 'hold' | 'gather' | 'settled' | 'retract'
 
 interface ContactListProps {
   onBack: () => void
@@ -78,13 +68,13 @@ export default function ContactList({
   const [folderDocked, setFolderDocked] = useState(false)
   const [spreadPhase, setSpreadPhase] = useState<SpreadTimelinePhase | null>(null)
   const [spreadLayouts, setSpreadLayouts] = useState<SpreadCardLayout[] | null>(null)
-  const [spreadCardSize, setSpreadCardSize] = useState<PocketCardSize | null>(null)
-  const [pocketHandoff, setPocketHandoff] = useState<PocketCardMeasure[] | null>(null)
-  const pinnedPocketNodesRef = useRef<HTMLElement[] | null>(null)
+  const [spreadOrigin, setSpreadOrigin] = useState<{ x: number; y: number } | null>(null)
+  const [dockPinBaselineY, setDockPinBaselineY] = useState<number | null>(null)
   const viewHostRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const spreadTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+  const dockSinkRef = useRef(0)
 
   const blockPageScroll = Boolean(activeId)
   const elasticEnabled = !measureOnly && !activeId && !listRevealActive
@@ -116,67 +106,35 @@ export default function ContactList({
     () => () => {
       clearCloseTimers()
       clearSpreadTimers()
-      releasePinnedPocketNodes(pinnedPocketNodesRef.current)
-      pinnedPocketNodesRef.current = null
     },
     [],
   )
 
   const resetDockState = () => {
     clearSpreadTimers()
-    releasePinnedPocketNodes(pinnedPocketNodesRef.current)
-    pinnedPocketNodesRef.current = null
     setSpreadPhase(null)
     setSpreadLayouts(null)
-    setSpreadCardSize(null)
-    setPocketHandoff(null)
+    setSpreadOrigin(null)
     setFolderDocked(false)
+    setDockPinBaselineY(null)
   }
 
   const scheduleSpreadPromote = () => {
     clearSpreadTimers()
-
-    const gatherStartMs = SPREAD_PROMOTE.folderDockSettleMs
-
-    spreadTimersRef.current.push(
-      window.setTimeout(() => {
-        const host = viewHostRef.current
-        const nodes = pinnedPocketNodesRef.current
-        if (host && nodes?.length) {
-          const origin = spreadClusterOriginFromHost(host)
-          const handoff = pinnedPocketCardsClusterLocal(nodes, origin)
-          releasePinnedPocketNodes(nodes)
-          pinnedPocketNodesRef.current = null
-          flushSync(() => {
-            setPocketHandoff(handoff)
-            setSpreadPhase('gather')
-          })
-        } else {
-          setSpreadPhase('gather')
-        }
-      }, gatherStartMs),
-    )
-
-    spreadTimersRef.current.push(
-      window.setTimeout(() => {
-        setSpreadPhase('settled')
-      }, gatherStartMs + SPREAD_PROMOTE.gatherDurationMs),
-    )
+    /** Keep `hold`: pocket cards stay in mask + viewport pin (gather fixed layer hides them). */
   }
 
-  const handleClose = () => {
-    if (!activeId || closePhase) return
-
-    const activeIndex = contacts.findIndex((contact) => contact.id === activeId)
+  const beginStackCloseSequence = (contactId: string) => {
+    const activeIndex = contacts.findIndex((contact) => contact.id === contactId)
     const maxRevealSteps = activeIndex >= 0 ? getMaxRevealSteps(activeIndex, contacts.length) : 0
     const totalRevealMs = REVEAL_DURATION_MS + maxRevealSteps * REVEAL_STAGGER_MS
-    /** Wait for pocket tuck + flap close before tilting folder back into the stack. */
     const returnStartMs = FOLD_DURATION_MS
     const returnEndMs = returnStartMs + RETURN_DURATION_MS
     const revealStartMs = returnEndMs - REVEAL_OVERLAP_MS
 
     resetDockState()
-    setClosingId(activeId)
+    dockSinkRef.current = 0
+    setClosingId(contactId)
     setActiveId(null)
     setClosePhase('folding')
 
@@ -199,6 +157,27 @@ export default function ContactList({
         setClosePhase(null)
       }, revealStartMs + totalRevealMs),
     )
+  }
+
+  const handleClose = () => {
+    if (!activeId || closePhase || spreadPhase === 'retract') return
+
+    if (folderDocked && spreadLayouts) {
+      clearSpreadTimers()
+
+      const sink = dockSinkRef.current
+      flushSync(() => setSpreadPhase('retract'))
+      setCenterOffsetY((prev) => prev - sink)
+
+      spreadTimersRef.current.push(
+        window.setTimeout(() => {
+          beginStackCloseSequence(activeId)
+        }, SPREAD_PROMOTE.undockDurationMs),
+      )
+      return
+    }
+
+    beginStackCloseSequence(activeId)
   }
 
   const folderOffsetToViewportCenter = (container: HTMLElement, folderEl: HTMLElement) => {
@@ -236,33 +215,27 @@ export default function ContactList({
     const container = scrollRef.current
     if (!container) return
 
-    const pocketRoot = element.querySelector<HTMLElement>('[data-inner-pocket-cards-root]')
-    if (pocketRoot) pocketRoot.style.visibility = 'hidden'
+    const cardEls = [...element.querySelectorAll<HTMLElement>('[data-inner-pocket-card]')]
+    if (cardEls.length < INNER_POCKET_CARD_COUNT) return
 
-    const snapshot = measureScreenPocketPin(element)
-    if (!snapshot) {
-      if (pocketRoot) pocketRoot.style.visibility = ''
-      return
-    }
+    const host = viewHostRef.current
+    if (!host) return
 
-    pinnedPocketNodesRef.current = snapshot.nodes
-    mountPinnedPocketNodes(snapshot.nodes)
+    const baselineY = centerOffsetY
 
     flushSync(() => {
-      setSpreadCardSize(snapshot.cardSize)
+      setDockPinBaselineY(baselineY)
+      setSpreadOrigin(spreadClusterOriginFromHost(host))
       setSpreadLayouts(generateSpreadCardLayouts(hashFolderSeed(id)))
-      setPocketHandoff(null)
       setSpreadPhase('hold')
       setFolderDocked(true)
     })
 
     scheduleSpreadPromote()
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setCenterOffsetY((prev) => prev + folderOffsetToDockPeek(container, element))
-      })
-    })
+    const dockSink = folderOffsetToDockPeek(container, element)
+    dockSinkRef.current = dockSink
+    setCenterOffsetY((prev) => prev + dockSink)
   }
 
   const focusedFolderId = activeId ?? closingId
@@ -458,13 +431,24 @@ export default function ContactList({
                 onDockFolder={(el) => handleDockFolder(contact.id, el)}
                 focusAboveOverlay={activeId === contact.id && !closePhase}
                 folderDocked={folderDocked && activeId === contact.id}
+                dockPinBaselineY={
+                  folderDocked && activeId === contact.id ? dockPinBaselineY : null
+                }
                 itemHidden={folderHidden}
                 itemEntering={folderEntering}
                 stackSiblingCollapsed={
                   stackSiblingsCollapsed && contact.id !== focusedFolderId
                 }
-                pocketInnerCards={
-                  contact.id === focusedFolderId && !folderDocked
+                pocketInnerCards={contact.id === focusedFolderId}
+                spreadPhase={
+                  activeId === contact.id ? spreadPhase : null
+                }
+                spreadLayouts={
+                  activeId === contact.id ? spreadLayouts : null
+                }
+                spreadOrigin={activeId === contact.id ? spreadOrigin : null}
+                centerYSyncUndock={
+                  contact.id === activeId && spreadPhase === 'retract'
                 }
               />
             )
@@ -473,18 +457,6 @@ export default function ContactList({
         </div>
       </main>
 
-      {folderDocked &&
-        spreadLayouts &&
-        spreadCardSize &&
-        spreadPhase &&
-        spreadPhase !== 'hold' && (
-          <FolderSpreadCards
-            layouts={spreadLayouts}
-            phase={spreadPhase}
-            cardSize={spreadCardSize}
-            pocketHandoff={pocketHandoff}
-          />
-        )}
     </div>
   )
 }
