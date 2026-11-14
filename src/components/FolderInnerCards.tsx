@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, type Transition } from 'framer-motion'
 import {
   designPx,
@@ -17,13 +18,15 @@ import {
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
 import {
   pocketScreenFixedPoses,
+  centerSpinSettledPoses,
+  pageCenterFromElement,
   rotationDegFromTransform,
   spreadLayoutScreenFixed,
   type ScreenFixedPose,
 } from '../utils/pocketCardGeometry'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
-type PocketSpreadPhase = 'hold' | 'gather' | 'settled' | 'retract'
+type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
 
 interface FolderInnerCardsProps {
   closing?: boolean
@@ -31,8 +34,11 @@ interface FolderInnerCardsProps {
   viewportPinTransition?: Transition
   holdPocketPose?: boolean
   spreadPhase?: PocketSpreadPhase | null
+  spreadPromoteStyle?: 'centerSpin' | 'scatter' | null
   spreadLayouts?: SpreadCardLayout[] | null
   spreadOrigin?: { x: number; y: number } | null
+  /** Portal target without CSS transform — `position:fixed` cards stay on screen. */
+  spreadPortalRoot?: HTMLElement | null
   /** Dock dive: clip top stays on page top; bottom still follows folder. */
   folderDocked?: boolean
 }
@@ -140,37 +146,55 @@ export default function FolderInnerCards({
   viewportPinTransition,
   holdPocketPose = false,
   spreadPhase = null,
+  spreadPromoteStyle = null,
   spreadLayouts = null,
   spreadOrigin = null,
+  spreadPortalRoot = null,
   folderDocked = false,
 }: FolderInnerCardsProps) {
   const pocketRef = useRef<HTMLDivElement>(null)
   const [spreadFrom, setSpreadFrom] = useState<ScreenFixedPose[] | null>(null)
   const [retractTargets, setRetractTargets] = useState<ScreenFixedPose[] | null>(null)
+  const [spinPivot, setSpinPivot] = useState<{ x: number; y: number } | null>(null)
 
   const screenSpreadActive =
     spreadFrom != null &&
-    (spreadPhase === 'gather' || spreadPhase === 'settled' || spreadPhase === 'retract')
+    (spreadPhase === 'centerSpin' ||
+      spreadPhase === 'gather' ||
+      spreadPhase === 'settled' ||
+      spreadPhase === 'retract')
+
+  const spreadPortalEl =
+    spreadPortalRoot ?? (typeof document !== 'undefined' ? document.body : null)
+  const showPortaledSpread = screenSpreadActive && spreadPortalEl != null
+
+  const useCenterSpinLayout = spreadPromoteStyle === 'centerSpin'
 
   usePocketClipMask(
     pocketRef,
-    !screenSpreadActive && !closing,
-    folderDocked && spreadPhase !== 'gather' && spreadPhase !== 'settled',
+    !showPortaledSpread && !closing,
+    folderDocked &&
+      spreadPhase !== 'gather' &&
+      spreadPhase !== 'settled' &&
+      spreadPhase !== 'centerSpin',
   )
 
   useLayoutEffect(() => {
     if (spreadPhase === 'hold' || spreadPhase == null) {
       setSpreadFrom(null)
       setRetractTargets(null)
+      setSpinPivot(null)
     }
   }, [spreadPhase])
 
   useLayoutEffect(() => {
-    if (spreadPhase !== 'gather' || !spreadLayouts?.length || !spreadOrigin) return
+    if (spreadPhase !== 'gather' && spreadPhase !== 'centerSpin') return
+    if (spreadPhase === 'gather' && (!spreadLayouts?.length || !spreadOrigin)) return
     const pocket = pocketRef.current
     if (!pocket) return
     const cards = [...pocket.querySelectorAll<HTMLElement>('[data-inner-pocket-card]')]
     if (cards.length < INNER_CARDS.length) return
+    const pivot = spreadPortalRoot ? pageCenterFromElement(spreadPortalRoot) : null
     setSpreadFrom(
       cards.map((el) => {
         const rect = el.getBoundingClientRect()
@@ -181,7 +205,8 @@ export default function FolderInnerCards({
         }
       }),
     )
-  }, [spreadPhase, spreadLayouts, spreadOrigin])
+    if (spreadPhase === 'centerSpin' && pivot) setSpinPivot(pivot)
+  }, [spreadPhase, spreadLayouts, spreadOrigin, spreadPortalRoot])
 
   useLayoutEffect(() => {
     if (spreadPhase !== 'retract' || !spreadOrigin) return
@@ -213,16 +238,33 @@ export default function FolderInnerCards({
 
   const renderScreenSpreadCard = (i: number) => {
     const layout = spreadLayouts?.[i]
-    if (!layout || !spreadOrigin || !spreadFrom?.[i]) return null
+    const from = spreadFrom?.[i]
+    if (!from) return null
+    if (!useCenterSpinLayout && (!layout || !spreadOrigin)) return null
 
-    const settled = spreadLayoutScreenFixed(layout, spreadOrigin, cardWidth, cardHeight, faceScale)
-    const from = spreadFrom[i]
+    const settled = layout && spreadOrigin
+      ? spreadLayoutScreenFixed(layout, spreadOrigin, cardWidth, cardHeight, faceScale)
+      : from
     let target = settled
     if (spreadPhase === 'retract' && retractTargets?.[i]) {
       target = retractTargets[i]
+    } else if (useCenterSpinLayout) {
+      const pivot =
+        spinPivot ??
+        (spreadPortalRoot ? pageCenterFromElement(spreadPortalRoot) : { x: 0, y: 0 })
+      const settled = centerSpinSettledPoses(
+        spreadFrom!,
+        pivot,
+        cardWidth,
+        cardHeight,
+        faceScale,
+        SPREAD_PROMOTE.centerRotateDeg,
+      )
+      target = settled[i] ?? from
     }
 
     const useGatherSpring = spreadPhase === 'gather'
+    const useCenterSpinTween = spreadPhase === 'centerSpin'
     const useRetractTween = spreadPhase === 'retract'
 
     return (
@@ -241,7 +283,7 @@ export default function FolderInnerCards({
           boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.14)`,
         }}
         initial={
-          useGatherSpring
+          useGatherSpring || useCenterSpinTween
             ? {
                 left: from.left,
                 top: from.top,
@@ -267,12 +309,17 @@ export default function FolderInnerCards({
                   ease: [0.42, 0, 0.18, 1],
                   delay: (INNER_CARDS.length - 1 - i) * 0.02,
                 }
-              : {
-                  delay: INNER_CARD_SPREAD.gatherDelayBase + i * INNER_CARD_SPREAD.gatherDelayStep,
-                  type: 'spring',
-                  stiffness: 255,
-                  damping: 27,
-                }
+              : useCenterSpinTween
+                ? {
+                    duration: SPREAD_PROMOTE.centerRotateDurationMs / 1000,
+                    ease: [0.33, 0, 0.18, 1],
+                  }
+                : {
+                    delay: INNER_CARD_SPREAD.gatherDelayBase + i * INNER_CARD_SPREAD.gatherDelayStep,
+                    type: 'spring',
+                    stiffness: 255,
+                    damping: 27,
+                  }
         }
       >
         <FolderInnerCardFace scale={scale} />
@@ -280,28 +327,28 @@ export default function FolderInnerCards({
     )
   }
 
-  return (
-    <div
-      ref={pocketRef}
-      className={`pointer-events-none ${screenSpreadActive ? 'fixed inset-0 z-[55]' : 'absolute z-[15]'}`}
-      data-inner-pocket-cards-root
-      style={
-        screenSpreadActive
-          ? undefined
-          : {
-              bottom: 0,
-              top: '-50vh',
-              left: 0,
-              right: 0,
-              overflow: 'hidden',
-            }
-      }
-    >
-      {screenSpreadActive
-        ? INNER_CARDS.map((_, i) => renderScreenSpreadCard(i))
-        : null}
+  const spreadOverlay = showPortaledSpread ? (
+    <div className="pointer-events-none fixed inset-0 z-[55]" data-inner-pocket-spread-portal>
+      {INNER_CARDS.map((_, i) => renderScreenSpreadCard(i))}
+    </div>
+  ) : null
 
-      {!screenSpreadActive ? (
+  return (
+    <>
+      {spreadOverlay && spreadPortalEl ? createPortal(spreadOverlay, spreadPortalEl) : null}
+      <div
+        ref={pocketRef}
+        className="pointer-events-none absolute z-[15]"
+        data-inner-pocket-cards-root
+        style={{
+          bottom: 0,
+          top: '-50vh',
+          left: 0,
+          right: 0,
+          overflow: 'hidden',
+        }}
+      >
+      {!showPortaledSpread ? (
         <motion.div
           className="absolute bottom-0"
           style={{
@@ -426,6 +473,7 @@ export default function FolderInnerCards({
           })}
         </motion.div>
       ) : null}
-    </div>
+      </div>
+    </>
   )
 }

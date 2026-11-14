@@ -33,7 +33,8 @@ const TAIL_ENTER_BATCH = 2
 
 type ClosePhase = 'folding' | 'returning' | 'revealing' | null
 
-type SpreadTimelinePhase = 'hold' | 'gather' | 'settled' | 'retract'
+type SpreadTimelinePhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
+type SpreadPromoteStyle = 'centerSpin' | 'scatter'
 
 interface ContactListProps {
   onBack: () => void
@@ -67,6 +68,7 @@ export default function ContactList({
   /** Second tap: dock folder while pocket cards stay fixed on screen. */
   const [folderDocked, setFolderDocked] = useState(false)
   const [spreadPhase, setSpreadPhase] = useState<SpreadTimelinePhase | null>(null)
+  const [spreadPromoteStyle, setSpreadPromoteStyle] = useState<SpreadPromoteStyle | null>(null)
   const [spreadLayouts, setSpreadLayouts] = useState<SpreadCardLayout[] | null>(null)
   const [spreadOrigin, setSpreadOrigin] = useState<{ x: number; y: number } | null>(null)
   const [dockPinBaselineY, setDockPinBaselineY] = useState<number | null>(null)
@@ -113,6 +115,7 @@ export default function ContactList({
   const resetDockState = () => {
     clearSpreadTimers()
     setSpreadPhase(null)
+    setSpreadPromoteStyle(null)
     setSpreadLayouts(null)
     setSpreadOrigin(null)
     setFolderDocked(false)
@@ -121,7 +124,18 @@ export default function ContactList({
 
   const scheduleSpreadPromote = () => {
     clearSpreadTimers()
-    /** Keep `hold`: pocket cards stay in mask + viewport pin (gather fixed layer hides them). */
+    const settleMs = SPREAD_PROMOTE.folderDockSettleMs
+    const spinEndMs = settleMs + SPREAD_PROMOTE.centerRotateDurationMs
+    spreadTimersRef.current.push(
+      window.setTimeout(() => {
+        setSpreadPhase('centerSpin')
+      }, settleMs),
+    )
+    spreadTimersRef.current.push(
+      window.setTimeout(() => {
+        setSpreadPhase('settled')
+      }, spinEndMs),
+    )
   }
 
   const beginStackCloseSequence = (contactId: string) => {
@@ -227,6 +241,7 @@ export default function ContactList({
       setDockPinBaselineY(baselineY)
       setSpreadOrigin(spreadClusterOriginFromHost(host))
       setSpreadLayouts(generateSpreadCardLayouts(hashFolderSeed(id)))
+      setSpreadPromoteStyle('centerSpin')
       setSpreadPhase('hold')
       setFolderDocked(true)
     })
@@ -443,10 +458,14 @@ export default function ContactList({
                 spreadPhase={
                   activeId === contact.id ? spreadPhase : null
                 }
+                spreadPromoteStyle={
+                  activeId === contact.id ? spreadPromoteStyle : null
+                }
                 spreadLayouts={
                   activeId === contact.id ? spreadLayouts : null
                 }
                 spreadOrigin={activeId === contact.id ? spreadOrigin : null}
+                spreadPortalRoot={viewHostRef.current}
                 centerYSyncUndock={
                   contact.id === activeId && spreadPhase === 'retract'
                 }

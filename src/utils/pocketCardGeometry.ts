@@ -2,6 +2,7 @@ import {
   designPx,
   FOLDER_DESIGN,
   INNER_CARDS,
+  SPREAD_PROMOTE,
   innerCardPeekYForPose,
   innerCardPocketRestRotate,
   innerCardSize,
@@ -26,7 +27,23 @@ export function spreadStageClusterOrigin(): { x: number; y: number } | null {
   }
 }
 
-/** Matches `.folder-spread-cards` clamp in index.css — usable before overlay mounts. */
+/** Visual page center (viewport). */
+export function viewportPageCenter(): { x: number; y: number } {
+  return {
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  }
+}
+
+/** App/page host center — matches user-facing “页面中心” inside the phone shell. */
+export function pageCenterFromElement(el: HTMLElement): { x: number; y: number } {
+  const rect = el.getBoundingClientRect()
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  }
+}
+
 export function spreadClusterOriginFromHost(hostEl: HTMLElement): { x: number; y: number } {
   const rect = hostEl.getBoundingClientRect()
   const dvh = window.innerHeight * 0.01
@@ -110,6 +127,52 @@ export type ScreenFixedPose = {
   left: number
   top: number
   rotate: number
+}
+
+/** Rotate card bounding box around a pivot (deg); updates position + self-rotation. */
+export function rotateScreenPoseAroundPivot(
+  pose: ScreenFixedPose,
+  cardWidth: number,
+  cardHeight: number,
+  pivot: { x: number; y: number },
+  deltaDeg: number,
+): ScreenFixedPose {
+  const cx = pose.left + cardWidth / 2
+  const cy = pose.top + cardHeight / 2
+  const rad = (deltaDeg * Math.PI) / 180
+  const dx = cx - pivot.x
+  const dy = cy - pivot.y
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  const ncx = pivot.x + dx * cos - dy * sin
+  const ncy = pivot.y + dx * sin + dy * cos
+  return {
+    left: ncx - cardWidth / 2,
+    top: ncy - cardHeight / 2,
+    rotate: pose.rotate + deltaDeg,
+  }
+}
+
+/** End pose: card centers on page pivot with light fan + shared spin delta. */
+export function centerSpinSettledPoses(
+  from: ScreenFixedPose[],
+  pivot: { x: number; y: number },
+  cardWidth: number,
+  cardHeight: number,
+  faceScale: number,
+  rotateDeg: number = SPREAD_PROMOTE.centerRotateDeg,
+): ScreenFixedPose[] {
+  const fan = SPREAD_PROMOTE.centerSpinFan
+  return from.map((pose, i) => {
+    const slot = fan[i] ?? fan[Math.min(i, fan.length - 1)]
+    const ox = designPx(slot.x, faceScale)
+    const oy = designPx(slot.y, faceScale)
+    return {
+      left: pivot.x + ox - cardWidth / 2,
+      top: pivot.y + oy - cardHeight / 2,
+      rotate: pose.rotate + rotateDeg,
+    }
+  })
 }
 
 export function spreadLayoutScreenFixed(

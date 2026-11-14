@@ -119,6 +119,15 @@ export const INNER_CARD_SPREAD = {
 export const SPREAD_PROMOTE = {
   /** Wait for folder dock dive before pocket cards gather/rotate to spread. */
   folderDockSettleMs: 760,
+  /** Pocket trio rotates + centers on page after dock settle (deg added to each card). */
+  centerRotateDeg: 90,
+  centerRotateDurationMs: 720,
+  /** Fan at page center after spin (design px @ card face scale). */
+  centerSpinFan: [
+    { x: -16, y: 6 },
+    { x: 0, y: 0 },
+    { x: 16, y: -6 },
+  ] as const,
   extraInDurationMs: 420,
   /** Per-card delay step while extra-in (matches FolderSpreadCards). */
   extraInStaggerMs: 80,

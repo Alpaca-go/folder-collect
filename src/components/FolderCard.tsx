@@ -13,7 +13,7 @@ import { FolderPanelBack, FolderPanelFront } from './FolderPanelLayers'
 import { stackLayerHorizontallyFlipped, stackZIndexForIndex } from '../utils/folderMorph'
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
 
-type PocketSpreadPhase = 'hold' | 'gather' | 'settled' | 'retract'
+type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
 
 const FOLDER_ROTATE_X = -40
 const FOLDER_PERSPECTIVE = 1200
@@ -40,8 +40,10 @@ interface FolderCardProps {
   /** centerOffsetY at dock start — pocket cards counter-translate to stay on screen. */
   dockPinBaselineY?: number | null
   spreadPhase?: PocketSpreadPhase | null
+  spreadPromoteStyle?: 'centerSpin' | 'scatter' | null
   spreadLayouts?: SpreadCardLayout[] | null
   spreadOrigin?: { x: number; y: number } | null
+  spreadPortalRoot?: HTMLElement | null
   /** Close path: keep hidden siblings in stack slots (no inactive dive). */
   stackSiblingCollapsed?: boolean
   pocketInnerCards?: boolean
@@ -61,8 +63,10 @@ export default function FolderCard({
   folderDocked = false,
   dockPinBaselineY = null,
   spreadPhase = null,
+  spreadPromoteStyle = null,
   spreadLayouts = null,
   spreadOrigin = null,
+  spreadPortalRoot = null,
   stackSiblingCollapsed = false,
   pocketInnerCards = true,
   centerYSyncUndock = false,
@@ -235,8 +239,10 @@ export default function FolderCard({
           viewportPinTransition={folderYOffsetTransition}
           holdPocketPose={folderDocked && spreadPhase === 'hold' && !isPocketClosing}
           spreadPhase={spreadPhase}
+          spreadPromoteStyle={spreadPromoteStyle}
           spreadLayouts={spreadLayouts}
           spreadOrigin={spreadOrigin}
+          spreadPortalRoot={spreadPortalRoot}
           folderDocked={folderDocked}
         />
       )}

@@ -3,7 +3,7 @@ import { useMotionValueEvent, type MotionValue } from 'framer-motion'
 import FolderCard, { type FolderMode } from './FolderCard'
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
 
-type PocketSpreadPhase = 'hold' | 'gather' | 'settled' | 'retract'
+type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
 
 interface StackFolderItemProps {
   index: number
@@ -20,8 +20,10 @@ interface StackFolderItemProps {
   folderDocked?: boolean
   dockPinBaselineY?: number | null
   spreadPhase?: PocketSpreadPhase | null
+  spreadPromoteStyle?: 'centerSpin' | 'scatter' | null
   spreadLayouts?: SpreadCardLayout[] | null
   spreadOrigin?: { x: number; y: number } | null
+  spreadPortalRoot?: HTMLElement | null
   itemHidden?: boolean
   itemEntering?: boolean
   stackSiblingCollapsed?: boolean
@@ -45,8 +47,10 @@ export default function StackFolderItem({
   folderDocked = false,
   dockPinBaselineY = null,
   spreadPhase = null,
+  spreadPromoteStyle = null,
   spreadLayouts = null,
   spreadOrigin = null,
+  spreadPortalRoot = null,
   itemHidden = false,
   itemEntering = false,
   stackSiblingCollapsed = false,
@@ -82,8 +86,10 @@ export default function StackFolderItem({
         folderDocked={folderDocked}
         dockPinBaselineY={dockPinBaselineY}
         spreadPhase={spreadPhase}
+        spreadPromoteStyle={spreadPromoteStyle}
         spreadLayouts={spreadLayouts}
         spreadOrigin={spreadOrigin}
+        spreadPortalRoot={spreadPortalRoot}
         stackSiblingCollapsed={stackSiblingCollapsed}
         pocketInnerCards={pocketInnerCards}
         centerYSyncUndock={centerYSyncUndock}
