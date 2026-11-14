@@ -246,11 +246,13 @@ export default function ContactList({
       setFolderDocked(true)
     })
 
-    scheduleSpreadPromote()
-
     const dockSink = folderOffsetToDockPeek(container, element)
     dockSinkRef.current = dockSink
-    setCenterOffsetY((prev) => prev + dockSink)
+    flushSync(() => {
+      setCenterOffsetY((prev) => prev + dockSink)
+    })
+
+    scheduleSpreadPromote()
   }
 
   const focusedFolderId = activeId ?? closingId

@@ -20,10 +20,10 @@ import {
   pocketScreenFixedPoses,
   centerSpinSettledPoses,
   pageCenterFromElement,
-  rotationDegFromTransform,
   spreadLayoutScreenFixed,
   type ScreenFixedPose,
 } from '../utils/pocketCardGeometry'
+import { screenFixedPoseFromPocketCard } from '../utils/measureScreenCardPins'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
 type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
@@ -195,16 +195,7 @@ export default function FolderInnerCards({
     const cards = [...pocket.querySelectorAll<HTMLElement>('[data-inner-pocket-card]')]
     if (cards.length < INNER_CARDS.length) return
     const pivot = spreadPortalRoot ? pageCenterFromElement(spreadPortalRoot) : null
-    setSpreadFrom(
-      cards.map((el) => {
-        const rect = el.getBoundingClientRect()
-        return {
-          left: rect.left,
-          top: rect.top,
-          rotate: rotationDegFromTransform(getComputedStyle(el).transform),
-        }
-      }),
-    )
+    setSpreadFrom(cards.map((el) => screenFixedPoseFromPocketCard(el)))
     if (spreadPhase === 'centerSpin' && pivot) setSpinPivot(pivot)
   }, [spreadPhase, spreadLayouts, spreadOrigin, spreadPortalRoot])
 
