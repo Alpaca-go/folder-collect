@@ -36,6 +36,12 @@ type ClosePhase = 'folding' | 'returning' | 'revealing' | null
 type SpreadTimelinePhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
 type SpreadPromoteStyle = 'centerSpin' | 'scatter'
 
+interface SpreadRetractOptions {
+  onComplete?: () => void
+  /** Lift the folder back up while the cards return. Defaults to on for a close. */
+  undock?: boolean
+}
+
 interface ContactListProps {
   onBack: () => void
   stackHidden?: boolean
@@ -79,7 +85,7 @@ export default function ContactList({
   const spreadTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const dockSinkRef = useRef(0)
   const spreadPhaseRef = useRef<SpreadTimelinePhase | null>(null)
-  const spreadRetractRef = useRef<(onComplete?: () => void) => void>(() => {})
+  const spreadRetractRef = useRef<(options?: SpreadRetractOptions) => void>(() => {})
   spreadPhaseRef.current = spreadPhase
 
   const blockPageScroll = Boolean(activeId)
@@ -127,28 +133,29 @@ export default function ContactList({
     dockSinkRef.current = 0
   }
 
-  spreadRetractRef.current = (onComplete?: () => void) => {
+  spreadRetractRef.current = ({
+    onComplete,
+    undock = Boolean(onComplete),
+  }: SpreadRetractOptions = {}) => {
     clearSpreadTimers()
-    const undockWithFolder = Boolean(onComplete)
     const sink = dockSinkRef.current
     flushSync(() => {
-      setSpreadRetractUndock(undockWithFolder)
+      setSpreadRetractUndock(undock)
       setSpreadPhase('retract')
     })
-    if (undockWithFolder) {
+    if (undock) {
       setCenterOffsetY((prev) => prev - sink)
     }
-    const finishMs = SPREAD_PROMOTE.centerRotateDurationMs
     spreadTimersRef.current.push(
       window.setTimeout(() => {
         setSpreadRetractUndock(false)
         if (onComplete) onComplete()
         else setSpreadPhase('hold')
-      }, finishMs),
+      }, SPREAD_PROMOTE.centerRotateDurationMs),
     )
   }
 
-  const scheduleSpreadPromote = () => {
+  const scheduleSpreadPromote = (contactId: string) => {
     clearSpreadTimers()
     const settleMs = SPREAD_PROMOTE.folderDockSettleMs
     const spinEndMs = settleMs + SPREAD_PROMOTE.centerRotateDurationMs
@@ -166,7 +173,7 @@ export default function ContactList({
     spreadTimersRef.current.push(
       window.setTimeout(() => {
         if (spreadPhaseRef.current !== 'settled') return
-        spreadRetractRef.current()
+        beginDockShowcaseExit(contactId)
       }, autoRetractMs),
     )
   }
@@ -206,11 +213,33 @@ export default function ContactList({
     )
   }
 
+  /**
+   * Tail of the dock showcase — plays on its own so the sequence never waits for a tap:
+   * 1. the cards slide back into the pocket while the folder stays docked,
+   * 2. the pocket layer takes over, then the folder floats up and closes itself.
+   */
+  const beginDockShowcaseExit = (contactId: string) => {
+    spreadRetractRef.current({
+      undock: false,
+      onComplete: () => {
+        setSpreadPhase('hold')
+        spreadTimersRef.current.push(
+          window.setTimeout(() => {
+            spreadRetractRef.current({
+              undock: true,
+              onComplete: () => beginStackCloseSequence(contactId),
+            })
+          }, 0),
+        )
+      },
+    })
+  }
+
   const handleClose = () => {
     if (!activeId || closePhase || spreadPhase === 'retract') return
 
     if (folderDocked && spreadLayouts) {
-      spreadRetractRef.current(() => beginStackCloseSequence(activeId))
+      spreadRetractRef.current({ onComplete: () => beginStackCloseSequence(activeId) })
       return
     }
 
@@ -275,7 +304,7 @@ export default function ContactList({
       setCenterOffsetY((prev) => prev + dockSink)
     })
 
-    scheduleSpreadPromote()
+    scheduleSpreadPromote(id)
   }
 
   const focusedFolderId = activeId ?? closingId
