@@ -35,15 +35,36 @@ export const FOLDER_DESIGN = {
 } as const
 
 /**
- * Fan offsets once horizontal (design px @ folder width).
+ * Pocket stack, painted back → front (fan offsets in design px @ folder width).
+ *
  * Pivot: visual bottom-right at rest → element `transformOrigin: 0% 100%` (bottom-left).
+ * `y` pushes a card deeper into the pocket, `dockOnly` cards stay tucked while the
+ * folder is open and slide out behind the trio once it docks — so the spread leaves
+ * with a loose eight-card stack instead of a tidy three-card fan.
  */
-/** Shared BL pivot — fan only via `rotate` (deg above horizontal base). */
 export const INNER_CARDS = [
-  { rotate: 0, x: 0, y: 0, delay: 0.32 },
-  { rotate: 5, x: 14, y: 0, delay: 0.48 },
-  { rotate: 10, x: 28, y: 0, delay: 0.64 },
+  { rotate: -4, x: -4, y: 44, dockOnly: true },
+  { rotate: 6, x: 3, y: 36, dockOnly: true },
+  { rotate: 1, x: 10, y: 29, dockOnly: true },
+  { rotate: 9, x: 17, y: 22, dockOnly: true },
+  { rotate: 3, x: 23, y: 15, dockOnly: true },
+  { rotate: 0, x: 0, y: 0 },
+  { rotate: 5, x: 14, y: 0 },
+  { rotate: 10, x: 28, y: 0 },
 ] as const
+
+/** Deeper cards revealed only while the folder is docked. */
+export const INNER_DOCK_ONLY_COUNT = INNER_CARDS.filter((card) => 'dockOnly' in card).length
+
+/** Deeper cards sliding out of the pocket once the folder starts its dock dive. */
+export const INNER_DOCK_REVEAL = {
+  delayBaseSec: 0.06,
+  delayStepSec: 0.045,
+  durationSec: 0.4,
+  opacityDurationSec: 0.28,
+  /** Close: deeper cards sink ahead of the trio so the tuck keeps its old length. */
+  closeStaggerSec: 0.02,
+} as const
 
 /** Pocket cards rotate in one-by-one (seconds). */
 export const INNER_CARD_INTRO = {
@@ -61,7 +82,7 @@ export const INNER_CARD_INTRO = {
 
 /** When the slowest pocket tuck (rotate / bury) finishes — flap may close immediately after. */
 export function innerCardPocketTuckDoneMs(
-  cardCount: number = INNER_POCKET_CARD_COUNT,
+  cardCount: number = INNER_POCKET_TRIO_COUNT,
 ): number {
   const { rotateCloseDurationSec, rotateCloseStaggerSec } = INNER_CARD_INTRO
   const lastStartSec = Math.max(0, cardCount - 1) * rotateCloseStaggerSec
@@ -70,7 +91,7 @@ export function innerCardPocketTuckDoneMs(
 
 /** Full pocket-out including opacity tail (not used to delay the flap). */
 export function innerCardPocketCloseSpanMs(
-  cardCount: number = INNER_POCKET_CARD_COUNT,
+  cardCount: number = INNER_POCKET_TRIO_COUNT,
 ): number {
   const tuckMs = innerCardPocketTuckDoneMs(cardCount)
   return tuckMs + INNER_CARD_INTRO.rotateCloseTailSec * 1000
@@ -83,12 +104,16 @@ export const FLAP_CLOSE_SETTLE_MS = 480
 export const INNER_CARD_FLAP_CLOSE_LEAD_MS = 720
 
 export function innerCardPocketFlapStartMs(
-  cardCount: number = INNER_POCKET_CARD_COUNT,
+  cardCount: number = INNER_POCKET_TRIO_COUNT,
 ): number {
   return Math.max(0, innerCardPocketTuckDoneMs(cardCount) - INNER_CARD_FLAP_CLOSE_LEAD_MS)
 }
 
-export const INNER_POCKET_CARD_COUNT = 3
+/** Every card living in the pocket — trio plus the deeper dock-only stack. */
+export const INNER_POCKET_CARD_COUNT = INNER_CARDS.length
+
+/** Cards in the visible front fan; deeper ones tuck first so the close keeps its timing. */
+export const INNER_POCKET_TRIO_COUNT = INNER_POCKET_CARD_COUNT - INNER_DOCK_ONLY_COUNT
 
 /** Extra stack revealed behind the pocket trio on dock. */
 export const INNER_SPREAD_EXTRA_CARD_COUNT = 0
@@ -119,15 +144,23 @@ export const INNER_CARD_SPREAD = {
 export const SPREAD_PROMOTE = {
   /** Wait for folder dock dive before pocket cards gather/rotate to spread. */
   folderDockSettleMs: 760,
-  /** Pocket trio rotates + centers on page after dock settle (deg added to each card). */
+  /** Pocket cards rotate + center on page after dock settle (deg added to each card). */
   centerRotateDeg: 90,
   centerRotateDurationMs: 720,
   centerSpinStaggerSec: 0.02,
-  /** Fan at page center after spin (design px @ card face scale). */
+  /**
+   * Loose stack at page center after the spin (design px @ card face scale),
+   * index-aligned with INNER_CARDS — irregular on purpose, no even fan.
+   */
   centerSpinFan: [
-    { x: -16, y: 6 },
-    { x: 0, y: 0 },
-    { x: 16, y: -6 },
+    { x: -24, y: 11 },
+    { x: 7, y: -7 },
+    { x: -10, y: 17 },
+    { x: 24, y: 2 },
+    { x: 1, y: -11 },
+    { x: -17, y: 7 },
+    { x: 4, y: -2 },
+    { x: 20, y: -9 },
   ] as const,
   extraInDurationMs: 420,
   /** Per-card delay step while extra cards animate in. */

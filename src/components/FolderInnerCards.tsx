@@ -7,6 +7,8 @@ import {
   INNER_CARD_INTRO,
   INNER_CARD_SPREAD,
   INNER_CARDS,
+  INNER_DOCK_ONLY_COUNT,
+  INNER_DOCK_REVEAL,
   SPREAD_PROMOTE,
   innerCardFaceScaleFromWidth,
   innerCardHiddenYForPose,
@@ -465,10 +467,23 @@ export default function FolderInnerCards({
             }
           >
             {INNER_CARDS.map((card, i) => {
+              const dockOnly = 'dockOnly' in card
+              /** The trio keeps its intro cadence; deeper cards never play it. */
               const introDelay =
-                INNER_CARD_INTRO.rotateDelayBase + i * INNER_CARD_INTRO.rotateStaggerSec
+                INNER_CARD_INTRO.rotateDelayBase +
+                Math.max(0, i - INNER_DOCK_ONLY_COUNT) * INNER_CARD_INTRO.rotateStaggerSec
               const restRotate = innerCardPocketRestRotate(card.rotate)
               const layerX = sharedLayerX + designPx(card.x, scale)
+              const layerY = sharedLayerY + designPx(card.y, scale)
+              const tuckedY = buryY + designPx(card.y, scale)
+              /** Deeper cards stay inside the pocket until the folder docks. */
+              const tucked = dockOnly && !folderDocked
+              const revealDelay =
+                INNER_DOCK_REVEAL.delayBaseSec + i * INNER_DOCK_REVEAL.delayStepSec
+              /** Deeper cards sink first; the trio keeps its back-to-front tuck wave. */
+              const closeStep = dockOnly
+                ? i * INNER_DOCK_REVEAL.closeStaggerSec
+                : (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec
 
               return (
                 <motion.div
@@ -489,69 +504,94 @@ export default function FolderInnerCards({
                   initial={
                     pocketRestInstant
                       ? false
-                      : {
-                          y: sharedLayerY,
-                          opacity: 1,
-                          rotate: introFrom,
-                          scale: 0.96,
-                          x: layerX,
-                        }
+                      : tucked
+                        ? {
+                            y: tuckedY,
+                            opacity: 0,
+                            rotate: restRotate,
+                            scale: 0.98,
+                            x: layerX,
+                          }
+                        : {
+                            y: layerY,
+                            opacity: 1,
+                            rotate: introFrom,
+                            scale: 0.96,
+                            x: layerX,
+                          }
                   }
                   animate={
                     closing
                       ? {
-                          y: buryY,
+                          y: tuckedY,
                           opacity: 0,
                           rotate: introFrom,
                           scale: 0.94,
                           x: layerX,
                         }
-                      : {
-                          y: sharedLayerY,
-                          opacity: 1,
-                          rotate: restRotate,
-                          scale: 1,
-                          x: layerX,
-                        }
+                      : tucked
+                        ? {
+                            y: tuckedY,
+                            opacity: 0,
+                            rotate: restRotate,
+                            scale: 0.98,
+                            x: layerX,
+                          }
+                        : {
+                            y: layerY,
+                            opacity: 1,
+                            rotate: restRotate,
+                            scale: 1,
+                            x: layerX,
+                          }
                   }
                   transition={
                     closing
                       ? {
                           rotate: {
-                            delay:
-                              (INNER_CARDS.length - 1 - i) *
-                              INNER_CARD_INTRO.rotateCloseStaggerSec,
+                            delay: closeStep,
                             type: 'tween',
                             duration: INNER_CARD_INTRO.rotateCloseDurationSec,
                             ease: [...INNER_CARD_INTRO.rotateEaseClose],
                           },
                           y: {
-                            delay:
-                              (INNER_CARDS.length - 1 - i) *
-                              INNER_CARD_INTRO.rotateCloseStaggerSec,
+                            delay: closeStep,
                             type: 'tween',
                             duration: INNER_CARD_INTRO.rotateCloseDurationSec,
                             ease: [0.38, 0, 0.16, 1],
                           },
                           opacity: {
-                            delay:
-                              (INNER_CARDS.length - 1 - i) *
-                                INNER_CARD_INTRO.rotateCloseStaggerSec +
-                              INNER_CARD_INTRO.rotateCloseDurationSec * 0.35,
+                            delay: closeStep + INNER_CARD_INTRO.rotateCloseDurationSec * 0.35,
                             type: 'tween',
                             duration: INNER_CARD_INTRO.rotateCloseTailSec,
                             ease: 'easeIn',
                           },
                           scale: {
-                            delay:
-                              (INNER_CARDS.length - 1 - i) *
-                              INNER_CARD_INTRO.rotateCloseStaggerSec,
+                            delay: closeStep,
                             type: 'tween',
                             duration: INNER_CARD_INTRO.rotateCloseDurationSec * 0.9,
                             ease: [0.4, 0, 0.2, 1],
                           },
                         }
-                      : holdPocketPose || pocketRestInstant
+                      : dockOnly
+                        ? {
+                            y: {
+                              delay: revealDelay,
+                              type: 'tween',
+                              duration: INNER_DOCK_REVEAL.durationSec,
+                              ease: [0.22, 0, 0.2, 1],
+                            },
+                            opacity: {
+                              delay: revealDelay,
+                              type: 'tween',
+                              duration: INNER_DOCK_REVEAL.opacityDurationSec,
+                              ease: 'easeOut',
+                            },
+                            rotate: { duration: 0 },
+                            scale: { duration: 0 },
+                            x: { duration: 0 },
+                          }
+                        : holdPocketPose || pocketRestInstant
                         ? {
                             rotate: { duration: 0 },
                             scale: { duration: 0 },

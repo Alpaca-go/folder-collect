@@ -15,6 +15,7 @@ import {
 } from '../utils/innerCardSpread'
 import {
   FLAP_CLOSE_SETTLE_MS,
+  INNER_CARDS,
   INNER_POCKET_CARD_COUNT,
   SPREAD_PROMOTE,
   innerCardPocketFlapStartMs,
@@ -24,6 +25,9 @@ import CabinetHomeHero from './cabinet/CabinetHomeHero'
 import BackToCabinetButton from './cabinet/BackToCabinetButton'
 
 const FOLD_DURATION_MS = innerCardPocketFlapStartMs() + FLAP_CLOSE_SETTLE_MS
+/** Portal cards spin / retract one after another — the tail runs past the base duration. */
+const SPREAD_CARD_STAGGER_SPAN_MS =
+  (INNER_CARDS.length - 1) * SPREAD_PROMOTE.centerSpinStaggerSec * 1000
 const RETURN_DURATION_MS = 560
 /** How early (ms) stack siblings may start revealing before return spring ends. */
 const REVEAL_OVERLAP_MS = 48
@@ -151,7 +155,7 @@ export default function ContactList({
         setSpreadRetractUndock(false)
         if (onComplete) onComplete()
         else setSpreadPhase('hold')
-      }, SPREAD_PROMOTE.centerRotateDurationMs),
+      }, SPREAD_PROMOTE.centerRotateDurationMs + SPREAD_CARD_STAGGER_SPAN_MS),
     )
   }
 
@@ -162,7 +166,8 @@ export default function ContactList({
   const scheduleSpreadPromote = () => {
     clearSpreadTimers()
     const settleMs = SPREAD_PROMOTE.folderDockSettleMs
-    const spinEndMs = settleMs + SPREAD_PROMOTE.centerRotateDurationMs
+    const spinEndMs =
+      settleMs + SPREAD_PROMOTE.centerRotateDurationMs + SPREAD_CARD_STAGGER_SPAN_MS
     spreadTimersRef.current.push(
       window.setTimeout(() => {
         setSpreadPhase('centerSpin')
