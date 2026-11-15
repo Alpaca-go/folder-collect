@@ -333,6 +333,9 @@ export default function ContactList({
     ? contacts.findIndex((contact) => contact.id === focusedFolderId)
     : -1
   const isOverlayOpen = Boolean(activeId)
+  /** Hero / title copy hides while a folder is focused; returns during stack sibling reveal. */
+  const upperCopyHidden = Boolean(focusedFolderId) && closePhase !== 'revealing'
+  const upperCopyRevealing = closePhase === 'revealing'
   /** On close, siblings stay in stack slots (no dive) until reveal — avoids a second visible row. */
   const stackSiblingsCollapsed =
     closePhase === 'folding' || closePhase === 'returning' || closePhase === 'revealing'
@@ -390,6 +393,10 @@ export default function ContactList({
           showHomeHero ? '' : 'pt-[var(--app-pad-top)]'
         }${
           folderDocked ? ' folder-scroll--docked' : ''
+        }${
+          upperCopyHidden ? ' folder-scroll--upper-copy-hidden' : ''
+        }${
+          upperCopyRevealing ? ' folder-scroll--upper-copy-revealing' : ''
         } ${
           blockPageScroll
             ? 'overflow-visible touch-pan-y folder-scroll--overlay-open'

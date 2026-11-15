@@ -23,7 +23,7 @@ export const FOLDER_DESIGN = {
   innerCardInsetX: 8,
   innerCardRadius: 0,
   innerCardShadowY: 4,
-  innerCardShadowBlur: 14,
+  innerCardShadowBlur: 5,
   innerCardSkeletonPad: 14,
   innerCardSkeletonLinePrimary: 10,
   innerCardSkeletonLineSecondary: 8,

@@ -108,6 +108,19 @@ body {
   scroll-behavior: auto;
 }
 
+[data-purpose='title-slot'] {
+  transition: opacity 280ms ease-out;
+}
+
+.folder-scroll--upper-copy-revealing [data-purpose='title-slot'] {
+  transition-duration: 320ms;
+}
+
+.folder-scroll--upper-copy-hidden [data-purpose='title-slot'] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Open folder: pocket mask spans scroll width; avoid axis clip on descendants. */
 .folder-scroll--overlay-open,
 .folder-scroll--overlay-open .folder-files-layout,
