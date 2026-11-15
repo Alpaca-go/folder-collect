@@ -30,6 +30,8 @@ interface StackFolderItemProps {
   pocketInnerCards?: boolean
   /** Match spread undock duration — folder Y uses tween, not spring. */
   centerYSyncUndock?: boolean
+  dockSinkPx?: number
+  spreadRetractUndock?: boolean
 }
 
 export default function StackFolderItem({
@@ -56,6 +58,8 @@ export default function StackFolderItem({
   stackSiblingCollapsed = false,
   pocketInnerCards = true,
   centerYSyncUndock = false,
+  dockSinkPx = 0,
+  spreadRetractUndock = false,
 }: StackFolderItemProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -93,6 +97,8 @@ export default function StackFolderItem({
         stackSiblingCollapsed={stackSiblingCollapsed}
         pocketInnerCards={pocketInnerCards}
         centerYSyncUndock={centerYSyncUndock}
+        dockSinkPx={dockSinkPx}
+        spreadRetractUndock={spreadRetractUndock}
       />
     </div>
   )

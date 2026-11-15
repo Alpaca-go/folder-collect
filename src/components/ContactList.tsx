@@ -72,11 +72,15 @@ export default function ContactList({
   const [spreadLayouts, setSpreadLayouts] = useState<SpreadCardLayout[] | null>(null)
   const [spreadOrigin, setSpreadOrigin] = useState<{ x: number; y: number } | null>(null)
   const [dockPinBaselineY, setDockPinBaselineY] = useState<number | null>(null)
+  const [spreadRetractUndock, setSpreadRetractUndock] = useState(false)
   const viewHostRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const spreadTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const dockSinkRef = useRef(0)
+  const spreadPhaseRef = useRef<SpreadTimelinePhase | null>(null)
+  const spreadRetractRef = useRef<(onComplete?: () => void) => void>(() => {})
+  spreadPhaseRef.current = spreadPhase
 
   const blockPageScroll = Boolean(activeId)
   const elasticEnabled = !measureOnly && !activeId && !listRevealActive
@@ -120,12 +124,35 @@ export default function ContactList({
     setSpreadOrigin(null)
     setFolderDocked(false)
     setDockPinBaselineY(null)
+    dockSinkRef.current = 0
+  }
+
+  spreadRetractRef.current = (onComplete?: () => void) => {
+    clearSpreadTimers()
+    const undockWithFolder = Boolean(onComplete)
+    const sink = dockSinkRef.current
+    flushSync(() => {
+      setSpreadRetractUndock(undockWithFolder)
+      setSpreadPhase('retract')
+    })
+    if (undockWithFolder) {
+      setCenterOffsetY((prev) => prev - sink)
+    }
+    const finishMs = SPREAD_PROMOTE.centerRotateDurationMs
+    spreadTimersRef.current.push(
+      window.setTimeout(() => {
+        setSpreadRetractUndock(false)
+        if (onComplete) onComplete()
+        else setSpreadPhase('hold')
+      }, finishMs),
+    )
   }
 
   const scheduleSpreadPromote = () => {
     clearSpreadTimers()
     const settleMs = SPREAD_PROMOTE.folderDockSettleMs
     const spinEndMs = settleMs + SPREAD_PROMOTE.centerRotateDurationMs
+    const autoRetractMs = spinEndMs + SPREAD_PROMOTE.centerHoldMs
     spreadTimersRef.current.push(
       window.setTimeout(() => {
         setSpreadPhase('centerSpin')
@@ -135,6 +162,12 @@ export default function ContactList({
       window.setTimeout(() => {
         setSpreadPhase('settled')
       }, spinEndMs),
+    )
+    spreadTimersRef.current.push(
+      window.setTimeout(() => {
+        if (spreadPhaseRef.current !== 'settled') return
+        spreadRetractRef.current()
+      }, autoRetractMs),
     )
   }
 
@@ -177,17 +210,7 @@ export default function ContactList({
     if (!activeId || closePhase || spreadPhase === 'retract') return
 
     if (folderDocked && spreadLayouts) {
-      clearSpreadTimers()
-
-      const sink = dockSinkRef.current
-      flushSync(() => setSpreadPhase('retract'))
-      setCenterOffsetY((prev) => prev - sink)
-
-      spreadTimersRef.current.push(
-        window.setTimeout(() => {
-          beginStackCloseSequence(activeId)
-        }, SPREAD_PROMOTE.undockDurationMs),
-      )
+      spreadRetractRef.current(() => beginStackCloseSequence(activeId))
       return
     }
 
@@ -469,7 +492,13 @@ export default function ContactList({
                 spreadOrigin={activeId === contact.id ? spreadOrigin : null}
                 spreadPortalRoot={viewHostRef.current}
                 centerYSyncUndock={
-                  contact.id === activeId && spreadPhase === 'retract'
+                  contact.id === activeId && spreadPhase === 'retract' && spreadRetractUndock
+                }
+                dockSinkPx={
+                  activeId === contact.id ? dockSinkRef.current : 0
+                }
+                spreadRetractUndock={
+                  activeId === contact.id && spreadRetractUndock
                 }
               />
             )

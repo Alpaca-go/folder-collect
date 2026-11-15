@@ -48,6 +48,8 @@ interface FolderCardProps {
   stackSiblingCollapsed?: boolean
   pocketInnerCards?: boolean
   centerYSyncUndock?: boolean
+  dockSinkPx?: number
+  spreadRetractUndock?: boolean
 }
 
 export default function FolderCard({
@@ -70,6 +72,8 @@ export default function FolderCard({
   stackSiblingCollapsed = false,
   pocketInnerCards = true,
   centerYSyncUndock = false,
+  dockSinkPx = 0,
+  spreadRetractUndock = false,
 }: FolderCardProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [flapHeldOpenForPocket, setFlapHeldOpenForPocket] = useState(false)
@@ -111,8 +115,8 @@ export default function FolderCard({
   const folderYOffsetTransition = centerYSyncUndock
     ? {
         type: 'tween' as const,
-        duration: SPREAD_PROMOTE.undockDurationMs / 1000,
-        ease: [0.42, 0, 0.18, 1] as const,
+        duration: SPREAD_PROMOTE.centerRotateDurationMs / 1000,
+        ease: [0.33, 0, 0.18, 1] as const,
       }
     : {
         type: 'spring' as const,
@@ -151,8 +155,8 @@ export default function FolderCard({
         y: centerYSyncUndock
           ? {
               type: 'tween',
-              duration: SPREAD_PROMOTE.undockDurationMs / 1000,
-              ease: [0.42, 0, 0.18, 1],
+              duration: SPREAD_PROMOTE.centerRotateDurationMs / 1000,
+              ease: [0.33, 0, 0.18, 1],
             }
           : {
               type: 'spring',
@@ -244,6 +248,8 @@ export default function FolderCard({
           spreadOrigin={spreadOrigin}
           spreadPortalRoot={spreadPortalRoot}
           folderDocked={folderDocked}
+          dockSinkPx={dockSinkPx}
+          retractUndocksFolder={spreadRetractUndock}
         />
       )}
 

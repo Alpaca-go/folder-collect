@@ -37,10 +37,10 @@ interface FolderInnerCardsProps {
   spreadPromoteStyle?: 'centerSpin' | 'scatter' | null
   spreadLayouts?: SpreadCardLayout[] | null
   spreadOrigin?: { x: number; y: number } | null
-  /** Portal target without CSS transform — `position:fixed` cards stay on screen. */
   spreadPortalRoot?: HTMLElement | null
-  /** Dock dive: clip top stays on page top; bottom still follows folder. */
   folderDocked?: boolean
+  dockSinkPx?: number
+  retractUndocksFolder?: boolean
 }
 
 function scrollPageXBounds(scroll: HTMLElement) {
@@ -140,6 +140,7 @@ function useFolderLayoutMetrics(containerRef: React.RefObject<HTMLDivElement | n
 
 const POCKET_FLOOR_FROM_FOLDER_BOTTOM = `${(16 / FOLDER_DESIGN.height) * 100}%`
 
+/** Exactly one card layer: pocket DOM, or a single portaled screen layer — never both. */
 export default function FolderInnerCards({
   closing = false,
   viewportPinY = 0,
@@ -151,41 +152,79 @@ export default function FolderInnerCards({
   spreadOrigin = null,
   spreadPortalRoot = null,
   folderDocked = false,
+  dockSinkPx = 0,
+  retractUndocksFolder = false,
 }: FolderInnerCardsProps) {
   const pocketRef = useRef<HTMLDivElement>(null)
+  const spreadWasRetractRef = useRef(false)
+  /** Flap-open centered pocket — same screen pose as fig.1 before dock. */
+  const homeScreenPosesRef = useRef<ScreenFixedPose[] | null>(null)
   const [spreadFrom, setSpreadFrom] = useState<ScreenFixedPose[] | null>(null)
   const [retractTargets, setRetractTargets] = useState<ScreenFixedPose[] | null>(null)
   const [spinPivot, setSpinPivot] = useState<{ x: number; y: number } | null>(null)
-
-  const screenSpreadActive =
-    spreadFrom != null &&
-    (spreadPhase === 'centerSpin' ||
-      spreadPhase === 'gather' ||
-      spreadPhase === 'settled' ||
-      spreadPhase === 'retract')
+  const [pocketRestInstant, setPocketRestInstant] = useState(false)
 
   const spreadPortalEl =
     spreadPortalRoot ?? (typeof document !== 'undefined' ? document.body : null)
-  const showPortaledSpread = screenSpreadActive && spreadPortalEl != null
 
   const useCenterSpinLayout = spreadPromoteStyle === 'centerSpin'
 
+  const screenLiftActive =
+    Boolean(spreadFrom?.length) &&
+    spreadPhase !== 'hold' &&
+    spreadPhase != null
+
+  const screenHandoffActive =
+    Boolean(spreadFrom?.length) && spreadPhase == null && spreadWasRetractRef.current
+
+  const showScreenLayer = (screenLiftActive || screenHandoffActive) && spreadPortalEl != null
+  const showPocketLayer = !showScreenLayer && !closing
+
   usePocketClipMask(
     pocketRef,
-    !showPortaledSpread && !closing,
+    showPocketLayer,
     folderDocked &&
       spreadPhase !== 'gather' &&
       spreadPhase !== 'settled' &&
-      spreadPhase !== 'centerSpin',
+      spreadPhase !== 'centerSpin' &&
+      spreadPhase !== 'retract',
   )
 
   useLayoutEffect(() => {
-    if (spreadPhase === 'hold' || spreadPhase == null) {
+    if (spreadPhase === 'retract') {
+      spreadWasRetractRef.current = true
+      return
+    }
+    if (spreadPhase === 'hold') {
+      setSpreadFrom(null)
+      setRetractTargets(null)
+      setSpinPivot(null)
+      return
+    }
+    if (spreadPhase == null) {
+      if (spreadWasRetractRef.current) {
+        setPocketRestInstant(true)
+        const id = requestAnimationFrame(() => {
+          spreadWasRetractRef.current = false
+          setSpreadFrom(null)
+          setSpinPivot(null)
+          requestAnimationFrame(() => {
+            setRetractTargets(null)
+          })
+        })
+        return () => cancelAnimationFrame(id)
+      }
       setSpreadFrom(null)
       setRetractTargets(null)
       setSpinPivot(null)
     }
   }, [spreadPhase])
+
+  useLayoutEffect(() => {
+    if (!pocketRestInstant) return
+    const id = requestAnimationFrame(() => setPocketRestInstant(false))
+    return () => cancelAnimationFrame(id)
+  }, [pocketRestInstant])
 
   useLayoutEffect(() => {
     if (spreadPhase !== 'gather' && spreadPhase !== 'centerSpin') return
@@ -203,10 +242,48 @@ export default function FolderInnerCards({
     if (spreadPhase !== 'retract' || !spreadOrigin) return
     const folder = pocketRef.current?.closest<HTMLElement>('[data-purpose="contact-card"]')
     if (!folder) return
-    setRetractTargets(pocketScreenFixedPoses(folder, spreadOrigin))
-  }, [spreadPhase, spreadOrigin])
+    if (retractUndocksFolder) {
+      if (homeScreenPosesRef.current?.length === INNER_CARDS.length) {
+        setRetractTargets(homeScreenPosesRef.current)
+        return
+      }
+      if (dockSinkPx > 0) {
+        setRetractTargets(
+          pocketScreenFixedPoses(folder, spreadOrigin, 0, -dockSinkPx),
+        )
+        return
+      }
+    }
+    if (
+      useCenterSpinLayout &&
+      spreadFrom &&
+      spreadFrom.length >= INNER_CARDS.length
+    ) {
+      setRetractTargets(spreadFrom)
+      return
+    }
+    const pocketPinOffsetY = dockSinkPx > 0 ? -dockSinkPx : 0
+    setRetractTargets(pocketScreenFixedPoses(folder, spreadOrigin, pocketPinOffsetY))
+  }, [
+    spreadPhase,
+    spreadOrigin,
+    dockSinkPx,
+    useCenterSpinLayout,
+    spreadFrom,
+    retractUndocksFolder,
+  ])
 
   const { scale, folderHeight } = useFolderLayoutMetrics(pocketRef)
+
+  useLayoutEffect(() => {
+    if (closing || folderDocked || spreadPhase) return
+    if (!showPocketLayer) return
+    const pocket = pocketRef.current
+    if (!pocket) return
+    const cards = [...pocket.querySelectorAll<HTMLElement>('[data-inner-pocket-card]')]
+    if (cards.length < INNER_CARDS.length) return
+    homeScreenPosesRef.current = cards.map((el) => screenFixedPoseFromPocketCard(el))
+  }, [closing, folderDocked, spreadPhase, showPocketLayer, viewportPinY])
 
   const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
   const introFrom = innerCardPocketIntroRotate()
@@ -226,7 +303,7 @@ export default function FolderInnerCards({
     innerCardHiddenYForPose(cardWidth, cardHeight, introFrom, scale) +
     designPx(FOLDER_DESIGN.innerCardPocketAnchorY + FOLDER_DESIGN.innerCardCloseBuryExtra, scale)
 
-  const renderScreenSpreadCard = (i: number) => {
+  const screenTargetForCard = (i: number): ScreenFixedPose | null => {
     const layout = spreadLayouts?.[i]
     const from = spreadFrom?.[i]
     if (!from) return null
@@ -234,23 +311,21 @@ export default function FolderInnerCards({
 
     const portalW = from.width ?? cardWidth
     const portalH = from.height ?? cardHeight
-    const portalScale = portalW / cardWidth
-    const portalRadius = radius * portalScale
-    const portalShadowY = shadowY * portalScale
-    const portalShadowBlur = shadowBlur * portalScale
     const portalFaceScale = innerCardFaceScaleFromWidth(portalW)
 
-    const settled = layout && spreadOrigin
-      ? spreadLayoutScreenFixed(layout, spreadOrigin, portalW, portalH, portalFaceScale)
-      : from
-    let target = settled
+    const settled =
+      layout && spreadOrigin
+        ? spreadLayoutScreenFixed(layout, spreadOrigin, portalW, portalH, portalFaceScale)
+        : from
+
     if (spreadPhase === 'retract' && retractTargets?.[i]) {
-      target = retractTargets[i]
-    } else if (useCenterSpinLayout) {
+      return { ...retractTargets[i], width: portalW, height: portalH }
+    }
+    if (useCenterSpinLayout) {
       const pivot =
         spinPivot ??
         (spreadPortalRoot ? pageCenterFromElement(spreadPortalRoot) : { x: 0, y: 0 })
-      const settled = centerSpinSettledPoses(
+      const fan = centerSpinSettledPoses(
         spreadFrom!,
         pivot,
         portalW,
@@ -258,82 +333,105 @@ export default function FolderInnerCards({
         portalFaceScale,
         SPREAD_PROMOTE.centerRotateDeg,
       )
-      target = settled[i] ?? from
+      return { ...fan[i], width: portalW, height: portalH }
     }
-
-    const useGatherSpring = spreadPhase === 'gather'
-    const useCenterSpinTween = spreadPhase === 'centerSpin'
-    const useRetractTween = spreadPhase === 'retract'
-
-    return (
-      <motion.div
-        key={i}
-        layout={false}
-        data-inner-pocket-card={i}
-        className="absolute overflow-hidden border border-neutral-200/80 bg-white"
-        style={{
-          position: 'fixed',
-          width: portalW,
-          height: portalH,
-          zIndex: 55 + i,
-          transformOrigin: '50% 50%',
-          borderRadius: portalRadius,
-          boxShadow: `0 ${portalShadowY}px ${portalShadowBlur}px rgba(0,0,0,0.14)`,
-        }}
-        initial={
-          useGatherSpring || useCenterSpinTween
-            ? {
-                left: from.left,
-                top: from.top,
-                rotate: from.rotate,
-                scale: 1,
-                opacity: 1,
-              }
-            : false
-        }
-        animate={{
-          left: target.left,
-          top: target.top,
-          rotate: target.rotate,
-          scale: 1,
-          opacity: 1,
-        }}
-        transition={
-          spreadPhase === 'settled'
-            ? { duration: 0 }
-            : useRetractTween
-              ? {
-                  duration: SPREAD_PROMOTE.undockDurationMs / 1000,
-                  ease: [0.42, 0, 0.18, 1],
-                  delay: (INNER_CARDS.length - 1 - i) * 0.02,
-                }
-              : useCenterSpinTween
-                ? {
-                    duration: SPREAD_PROMOTE.centerRotateDurationMs / 1000,
-                    ease: [0.33, 0, 0.18, 1],
-                  }
-                : {
-                    delay: INNER_CARD_SPREAD.gatherDelayBase + i * INNER_CARD_SPREAD.gatherDelayStep,
-                    type: 'spring',
-                    stiffness: 255,
-                    damping: 27,
-                  }
-        }
-      >
-        <FolderInnerCardFace scale={scale * portalScale} />
-      </motion.div>
-    )
+    return { ...settled, width: portalW, height: portalH }
   }
 
-  const spreadOverlay = showPortaledSpread ? (
-    <div className="pointer-events-none fixed inset-0 z-[55]" data-inner-pocket-spread-portal>
-      {INNER_CARDS.map((_, i) => renderScreenSpreadCard(i))}
-    </div>
-  ) : null
+  const screenOverlay =
+    showScreenLayer && spreadFrom ? (
+      <div className="pointer-events-none fixed inset-0 z-[55]" data-inner-pocket-spread-portal>
+        {INNER_CARDS.map((_, i) => {
+          const from = spreadFrom[i]
+          const target = screenTargetForCard(i)
+          if (!from || !target) return null
+
+          const portalW = from.width ?? cardWidth
+          const portalH = from.height ?? cardHeight
+          const portalScale = portalW / cardWidth
+          const portalRadius = radius * portalScale
+          const portalShadowY = shadowY * portalScale
+          const portalShadowBlur = shadowBlur * portalScale
+
+          const useGatherSpring = spreadPhase === 'gather'
+          const useCenterSpinTween = spreadPhase === 'centerSpin'
+          const useRetractTween = spreadPhase === 'retract'
+
+          return (
+            <motion.div
+              key={`pocket-card-${i}`}
+              layout={false}
+              data-inner-pocket-card={i}
+              className="absolute overflow-hidden border border-neutral-200/80 bg-white"
+              style={{
+                position: 'fixed',
+                width: portalW,
+                height: portalH,
+                zIndex: 55 + i,
+                transformOrigin: '50% 50%',
+                borderRadius: portalRadius,
+                boxShadow: `0 ${portalShadowY}px ${portalShadowBlur}px rgba(0,0,0,0.14)`,
+              }}
+              initial={
+                useGatherSpring || useCenterSpinTween
+                  ? {
+                      left: from.left,
+                      top: from.top,
+                      rotate: from.rotate,
+                      scale: 1,
+                      opacity: 1,
+                    }
+                  : false
+              }
+              animate={{
+                left: target.left,
+                top: target.top,
+                rotate: target.rotate,
+                scale: 1,
+                opacity: 1,
+              }}
+              transition={
+                spreadPhase === 'settled'
+                  ? { duration: 0 }
+                  : useRetractTween
+                    ? useCenterSpinLayout
+                      ? {
+                          duration: SPREAD_PROMOTE.centerRotateDurationMs / 1000,
+                          ease: [0.33, 0, 0.18, 1],
+                          delay:
+                            (INNER_CARDS.length - 1 - i) * SPREAD_PROMOTE.centerSpinStaggerSec,
+                        }
+                      : {
+                          duration: SPREAD_PROMOTE.undockDurationMs / 1000,
+                          ease: [0.42, 0, 0.18, 1],
+                          delay: (INNER_CARDS.length - 1 - i) * 0.02,
+                        }
+                    : useCenterSpinTween
+                      ? {
+                          duration: SPREAD_PROMOTE.centerRotateDurationMs / 1000,
+                          ease: [0.33, 0, 0.18, 1],
+                          delay: i * SPREAD_PROMOTE.centerSpinStaggerSec,
+                        }
+                      : {
+                          delay:
+                            INNER_CARD_SPREAD.gatherDelayBase +
+                            i * INNER_CARD_SPREAD.gatherDelayStep,
+                          type: 'spring',
+                          stiffness: 255,
+                          damping: 27,
+                        }
+              }
+            >
+              <FolderInnerCardFace scale={scale * portalScale} />
+            </motion.div>
+          )
+        })}
+      </div>
+    ) : null
 
   return (
     <>
-      {spreadOverlay && spreadPortalEl ? createPortal(spreadOverlay, spreadPortalEl) : null}
+      {screenOverlay && spreadPortalEl ? createPortal(screenOverlay, spreadPortalEl) : null}
       <div
         ref={pocketRef}
         className="pointer-events-none absolute z-[15]"
@@ -343,134 +441,144 @@ export default function FolderInnerCards({
           top: '-50vh',
           left: 0,
           right: 0,
-          overflow: 'hidden',
+          overflow: showPocketLayer ? 'hidden' : 'visible',
         }}
       >
-      {!showPortaledSpread ? (
-        <motion.div
-          className="absolute bottom-0"
-          style={{
-            height: folderHeight || 'var(--inner-pocket-folder-height, 100%)',
-            left: 'var(--inner-pocket-extend-left, 0px)',
-            right: 'var(--inner-pocket-extend-right, 0px)',
-          }}
-          data-inner-pocket-floor
-          initial={false}
-          animate={{ y: closing ? 0 : viewportPinY }}
-          transition={
-            closing
-              ? { duration: 0 }
-              : viewportPinTransition
-                ? { y: viewportPinTransition }
-                : undefined
-          }
-        >
-          {INNER_CARDS.map((card, i) => {
-            const introDelay =
-              INNER_CARD_INTRO.rotateDelayBase + i * INNER_CARD_INTRO.rotateStaggerSec
-            const restRotate = innerCardPocketRestRotate(card.rotate)
-            const layerX = sharedLayerX + designPx(card.x, scale)
+        {showPocketLayer ? (
+          <motion.div
+            className="absolute bottom-0"
+            style={{
+              height: folderHeight || 'var(--inner-pocket-folder-height, 100%)',
+              left: 'var(--inner-pocket-extend-left, 0px)',
+              right: 'var(--inner-pocket-extend-right, 0px)',
+            }}
+            data-inner-pocket-floor
+            initial={false}
+            animate={{ y: closing ? 0 : viewportPinY }}
+            transition={
+              closing
+                ? { duration: 0 }
+                : viewportPinTransition
+                  ? { y: viewportPinTransition }
+                  : undefined
+            }
+          >
+            {INNER_CARDS.map((card, i) => {
+              const introDelay =
+                INNER_CARD_INTRO.rotateDelayBase + i * INNER_CARD_INTRO.rotateStaggerSec
+              const restRotate = innerCardPocketRestRotate(card.rotate)
+              const layerX = sharedLayerX + designPx(card.x, scale)
 
-            return (
-              <motion.div
-                key={i}
-                layout={false}
-                data-inner-pocket-card={i}
-                className="absolute overflow-hidden border border-neutral-200/80 bg-white"
-                style={{
-                  left: '50%',
-                  width: cardWidth,
-                  height: cardHeight,
-                  bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
-                  zIndex: i + 1,
-                  transformOrigin: '0% 100%',
-                  borderRadius: radius,
-                  boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
-                }}
-                initial={{
-                  y: sharedLayerY,
-                  opacity: 1,
-                  rotate: introFrom,
-                  scale: 0.96,
-                  x: layerX,
-                }}
-                animate={
-                  closing
-                    ? {
-                        y: buryY,
-                        opacity: 0,
-                        rotate: introFrom,
-                        scale: 0.94,
-                        x: layerX,
-                      }
-                    : {
-                        y: sharedLayerY,
-                        opacity: 1,
-                        rotate: restRotate,
-                        scale: 1,
-                        x: layerX,
-                      }
-                }
-                transition={
-                  closing
-                    ? {
-                        rotate: {
-                          delay:
-                            (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec,
-                          type: 'tween',
-                          duration: INNER_CARD_INTRO.rotateCloseDurationSec,
-                          ease: [...INNER_CARD_INTRO.rotateEaseClose],
-                        },
-                        y: {
-                          delay:
-                            (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec,
-                          type: 'tween',
-                          duration: INNER_CARD_INTRO.rotateCloseDurationSec,
-                          ease: [0.38, 0, 0.16, 1],
-                        },
-                        opacity: {
-                          delay:
-                            (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec +
-                            INNER_CARD_INTRO.rotateCloseDurationSec * 0.35,
-                          type: 'tween',
-                          duration: INNER_CARD_INTRO.rotateCloseTailSec,
-                          ease: 'easeIn',
-                        },
-                        scale: {
-                          delay:
-                            (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec,
-                          type: 'tween',
-                          duration: INNER_CARD_INTRO.rotateCloseDurationSec * 0.9,
-                          ease: [0.4, 0, 0.2, 1],
-                        },
-                      }
-                    : holdPocketPose
+              return (
+                <motion.div
+                  key={`pocket-card-${i}`}
+                  layout={false}
+                  data-inner-pocket-card={i}
+                  className="absolute overflow-hidden border border-neutral-200/80 bg-white"
+                  style={{
+                    left: '50%',
+                    width: cardWidth,
+                    height: cardHeight,
+                    bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
+                    zIndex: i + 1,
+                    transformOrigin: '0% 100%',
+                    borderRadius: radius,
+                    boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
+                  }}
+                  initial={
+                    pocketRestInstant
+                      ? false
+                      : {
+                          y: sharedLayerY,
+                          opacity: 1,
+                          rotate: introFrom,
+                          scale: 0.96,
+                          x: layerX,
+                        }
+                  }
+                  animate={
+                    closing
                       ? {
-                          rotate: { duration: 0 },
-                          scale: { duration: 0 },
+                          y: buryY,
+                          opacity: 0,
+                          rotate: introFrom,
+                          scale: 0.94,
+                          x: layerX,
                         }
                       : {
+                          y: sharedLayerY,
+                          opacity: 1,
+                          rotate: restRotate,
+                          scale: 1,
+                          x: layerX,
+                        }
+                  }
+                  transition={
+                    closing
+                      ? {
                           rotate: {
-                            delay: introDelay,
+                            delay:
+                              (INNER_CARDS.length - 1 - i) *
+                              INNER_CARD_INTRO.rotateCloseStaggerSec,
                             type: 'tween',
-                            duration: INNER_CARD_INTRO.rotateDurationSec,
-                            ease: [...INNER_CARD_INTRO.rotateEaseOpen],
+                            duration: INNER_CARD_INTRO.rotateCloseDurationSec,
+                            ease: [...INNER_CARD_INTRO.rotateEaseClose],
+                          },
+                          y: {
+                            delay:
+                              (INNER_CARDS.length - 1 - i) *
+                              INNER_CARD_INTRO.rotateCloseStaggerSec,
+                            type: 'tween',
+                            duration: INNER_CARD_INTRO.rotateCloseDurationSec,
+                            ease: [0.38, 0, 0.16, 1],
+                          },
+                          opacity: {
+                            delay:
+                              (INNER_CARDS.length - 1 - i) *
+                                INNER_CARD_INTRO.rotateCloseStaggerSec +
+                              INNER_CARD_INTRO.rotateCloseDurationSec * 0.35,
+                            type: 'tween',
+                            duration: INNER_CARD_INTRO.rotateCloseTailSec,
+                            ease: 'easeIn',
                           },
                           scale: {
-                            delay: introDelay,
+                            delay:
+                              (INNER_CARDS.length - 1 - i) *
+                              INNER_CARD_INTRO.rotateCloseStaggerSec,
                             type: 'tween',
-                            duration: INNER_CARD_INTRO.rotateDurationSec * 0.75,
-                            ease: [0.45, 0, 0.25, 1],
+                            duration: INNER_CARD_INTRO.rotateCloseDurationSec * 0.9,
+                            ease: [0.4, 0, 0.2, 1],
                           },
                         }
-                }
-              >
-                <FolderInnerCardFace scale={scale} />
-              </motion.div>
-            )
-          })}
-        </motion.div>
-      ) : null}
+                      : holdPocketPose || pocketRestInstant
+                        ? {
+                            rotate: { duration: 0 },
+                            scale: { duration: 0 },
+                            y: { duration: 0 },
+                            x: { duration: 0 },
+                          }
+                        : {
+                            rotate: {
+                              delay: introDelay,
+                              type: 'tween',
+                              duration: INNER_CARD_INTRO.rotateDurationSec,
+                              ease: [...INNER_CARD_INTRO.rotateEaseOpen],
+                            },
+                            scale: {
+                              delay: introDelay,
+                              type: 'tween',
+                              duration: INNER_CARD_INTRO.rotateDurationSec * 0.75,
+                              ease: [0.45, 0, 0.25, 1],
+                            },
+                          }
+                  }
+                >
+                  <FolderInnerCardFace scale={scale} />
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        ) : null}
       </div>
     </>
   )

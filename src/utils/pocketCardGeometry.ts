@@ -90,11 +90,14 @@ export function pinnedPocketCardsClusterLocal(
 export function pocketCardsClusterLocal(
   folderEl: HTMLElement,
   clusterOrigin: { x: number; y: number },
+  pocketPinOffsetY = 0,
+  folderShiftY = 0,
 ): PocketCardMeasure[] {
   const rect = folderEl.getBoundingClientRect()
   const scale = rect.width / FOLDER_DESIGN.width
   const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
-  const pocketBottom = rect.top + rect.height * (1 - 16 / FOLDER_DESIGN.height)
+  const folderTop = rect.top + folderShiftY
+  const pocketBottom = folderTop + rect.height * (1 - 16 / FOLDER_DESIGN.height)
   const pocketCenterX = rect.left + rect.width / 2
 
   return INNER_CARDS.map((card) => {
@@ -112,7 +115,7 @@ export function pocketCardsClusterLocal(
     const offsetX = cardWidth / 2
     const offsetY = -cardHeight / 2
     const centerX = anchorX + offsetX * cos - offsetY * sin
-    const centerY = pivotY + offsetX * sin + offsetY * cos
+    const centerY = pivotY + offsetX * sin + offsetY * cos + pocketPinOffsetY
     return {
       x: centerX - clusterOrigin.x,
       y: centerY - clusterOrigin.y,
@@ -221,10 +224,19 @@ export function spreadLayoutScreenFixed(
 export function pocketScreenFixedPoses(
   folderEl: HTMLElement,
   clusterOrigin: { x: number; y: number },
+  pocketPinOffsetY = 0,
+  folderShiftY = 0,
 ): ScreenFixedPose[] {
-  return pocketCardsClusterLocal(folderEl, clusterOrigin).map((p) => ({
+  return pocketCardsClusterLocal(
+    folderEl,
+    clusterOrigin,
+    pocketPinOffsetY,
+    folderShiftY,
+  ).map((p) => ({
     left: clusterOrigin.x + p.x - p.width / 2,
     top: clusterOrigin.y + p.y - p.height / 2,
     rotate: p.rotate,
+    width: p.width,
+    height: p.height,
   }))
 }

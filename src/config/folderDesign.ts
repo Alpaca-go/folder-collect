@@ -122,6 +122,8 @@ export const SPREAD_PROMOTE = {
   /** Pocket trio rotates + centers on page after dock settle (deg added to each card). */
   centerRotateDeg: 90,
   centerRotateDurationMs: 720,
+  centerHoldMs: 1000,
+  centerSpinStaggerSec: 0.02,
   /** Fan at page center after spin (design px @ card face scale). */
   centerSpinFan: [
     { x: -16, y: 6 },
