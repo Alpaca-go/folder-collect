@@ -150,17 +150,18 @@ export const SPREAD_PROMOTE = {
   centerSpinStaggerSec: 0.02,
   /**
    * Loose stack at page center after the spin (design px @ card face scale),
-   * index-aligned with INNER_CARDS — irregular on purpose, no even fan.
+   * index-aligned with INNER_CARDS. `rotate` nudges the settled angle so no two
+   * cards share an even fan step — the pocket fan itself stays untouched.
    */
   centerSpinFan: [
-    { x: -24, y: 11 },
+    { x: -24, y: 11, rotate: -1 },
     { x: 7, y: -7 },
-    { x: -10, y: 17 },
-    { x: 24, y: 2 },
+    { x: -10, y: 17, rotate: -1 },
+    { x: 24, y: 2, rotate: 2 },
     { x: 1, y: -11 },
-    { x: -17, y: 7 },
-    { x: 4, y: -2 },
-    { x: 20, y: -9 },
+    { x: -17, y: 7, rotate: -3 },
+    { x: 4, y: -2, rotate: -1 },
+    { x: 20, y: -9, rotate: -2 },
   ] as const,
   extraInDurationMs: 420,
   /** Per-card delay step while extra cards animate in. */

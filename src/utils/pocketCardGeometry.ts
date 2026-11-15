@@ -124,7 +124,7 @@ export function pocketCardVisualBoxSize(el: HTMLElement): { width: number; heigh
   }
 }
 
-/** End pose: card centers on page pivot with light fan + shared spin delta. */
+/** End pose: card centers on page pivot with a loose, deliberately uneven pile. */
 export function centerSpinSettledPoses(
   from: ScreenFixedPose[],
   pivot: { x: number; y: number },
@@ -138,10 +138,11 @@ export function centerSpinSettledPoses(
     const slot = fan[i] ?? fan[Math.min(i, fan.length - 1)]
     const ox = designPx(slot.x, faceScale)
     const oy = designPx(slot.y, faceScale)
+    const tilt = 'rotate' in slot ? slot.rotate : 0
     return {
       left: pivot.x + ox - cardWidth / 2,
       top: pivot.y + oy - cardHeight / 2,
-      rotate: pose.rotate + rotateDeg,
+      rotate: pose.rotate + rotateDeg + tilt,
     }
   })
 }
