@@ -155,11 +155,14 @@ export default function ContactList({
     )
   }
 
-  const scheduleSpreadPromote = (contactId: string) => {
+  /**
+   * Dock → center spin → settle. The sequence stops here on purpose: the cards stay
+   * fanned on the page center until the backdrop is tapped (see `handleClose`).
+   */
+  const scheduleSpreadPromote = () => {
     clearSpreadTimers()
     const settleMs = SPREAD_PROMOTE.folderDockSettleMs
     const spinEndMs = settleMs + SPREAD_PROMOTE.centerRotateDurationMs
-    const autoRetractMs = spinEndMs + SPREAD_PROMOTE.centerHoldMs
     spreadTimersRef.current.push(
       window.setTimeout(() => {
         setSpreadPhase('centerSpin')
@@ -169,12 +172,6 @@ export default function ContactList({
       window.setTimeout(() => {
         setSpreadPhase('settled')
       }, spinEndMs),
-    )
-    spreadTimersRef.current.push(
-      window.setTimeout(() => {
-        if (spreadPhaseRef.current !== 'settled') return
-        beginDockShowcaseExit(contactId)
-      }, autoRetractMs),
     )
   }
 
@@ -214,7 +211,7 @@ export default function ContactList({
   }
 
   /**
-   * Tail of the dock showcase — plays on its own so the sequence never waits for a tap:
+   * Tail after the page-center pause — one backdrop tap plays both segments:
    * 1. the cards slide back into the pocket while the folder stays docked,
    * 2. the pocket layer takes over, then the folder floats up and closes itself.
    */
@@ -239,6 +236,11 @@ export default function ContactList({
     if (!activeId || closePhase || spreadPhase === 'retract') return
 
     if (folderDocked && spreadLayouts) {
+      /** Parked at page center: play the full tail instead of jumping straight to the close. */
+      if (spreadPhase === 'settled') {
+        beginDockShowcaseExit(activeId)
+        return
+      }
       spreadRetractRef.current({ onComplete: () => beginStackCloseSequence(activeId) })
       return
     }
@@ -304,7 +306,7 @@ export default function ContactList({
       setCenterOffsetY((prev) => prev + dockSink)
     })
 
-    scheduleSpreadPromote(id)
+    scheduleSpreadPromote()
   }
 
   const focusedFolderId = activeId ?? closingId
