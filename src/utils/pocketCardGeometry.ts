@@ -17,24 +17,6 @@ export type PocketCardMeasure = {
   height: number
 }
 
-export function spreadStageClusterOrigin(): { x: number; y: number } | null {
-  const stage = document.querySelector<HTMLElement>('.folder-spread-cards__stage')
-  if (!stage) return null
-  const rect = stage.getBoundingClientRect()
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
-  }
-}
-
-/** Visual page center (viewport). */
-export function viewportPageCenter(): { x: number; y: number } {
-  return {
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
-  }
-}
-
 /** App/page host center — matches user-facing “页面中心” inside the phone shell. */
 export function pageCenterFromElement(el: HTMLElement): { x: number; y: number } {
   const rect = el.getBoundingClientRect()
@@ -69,24 +51,7 @@ export function rotationDegFromTransform(transform: string): number {
   return (Math.atan2(b, a) * 180) / Math.PI
 }
 
-/** Pinned pocket clones on `document.body` → spread-cluster local coords. */
-export function pinnedPocketCardsClusterLocal(
-  nodes: HTMLElement[],
-  clusterOrigin: { x: number; y: number },
-): PocketCardMeasure[] {
-  return nodes.map((el) => {
-    const rect = el.getBoundingClientRect()
-    const transform = getComputedStyle(el).transform
-    return {
-      x: rect.left + rect.width / 2 - clusterOrigin.x,
-      y: rect.top + rect.height / 2 - clusterOrigin.y,
-      rotate: rotationDegFromTransform(transform),
-      width: rect.width,
-      height: rect.height,
-    }
-  })
-}
-
+/** Pocket cards inside an open folder → spread-cluster local coords. */
 export function pocketCardsClusterLocal(
   folderEl: HTMLElement,
   clusterOrigin: { x: number; y: number },
@@ -156,30 +121,6 @@ export function pocketCardVisualBoxSize(el: HTMLElement): { width: number; heigh
   return {
     width: el.offsetWidth * u,
     height: el.offsetHeight * u,
-  }
-}
-
-/** Rotate card bounding box around a pivot (deg); updates position + self-rotation. */
-export function rotateScreenPoseAroundPivot(
-  pose: ScreenFixedPose,
-  cardWidth: number,
-  cardHeight: number,
-  pivot: { x: number; y: number },
-  deltaDeg: number,
-): ScreenFixedPose {
-  const cx = pose.left + cardWidth / 2
-  const cy = pose.top + cardHeight / 2
-  const rad = (deltaDeg * Math.PI) / 180
-  const dx = cx - pivot.x
-  const dy = cy - pivot.y
-  const cos = Math.cos(rad)
-  const sin = Math.sin(rad)
-  const ncx = pivot.x + dx * cos - dy * sin
-  const ncy = pivot.y + dx * sin + dy * cos
-  return {
-    left: ncx - cardWidth / 2,
-    top: ncy - cardHeight / 2,
-    rotate: pose.rotate + deltaDeg,
   }
 }
 

@@ -130,7 +130,7 @@ export const SPREAD_PROMOTE = {
     { x: 16, y: -6 },
   ] as const,
   extraInDurationMs: 420,
-  /** Per-card delay step while extra-in (matches FolderSpreadCards). */
+  /** Per-card delay step while extra cards animate in. */
   extraInStaggerMs: 80,
   /** Extra cards intro: start tighter, spring out to spread layout (0–1). */
   extraInClusterPull: 0.2,

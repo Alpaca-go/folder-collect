@@ -207,35 +207,6 @@ body {
   touch-action: manipulation;
 }
 
-.folder-spread-cards {
-  top: clamp(148px, 24dvh, 38%);
-  bottom: clamp(72px, 11dvh, 20%);
-}
-
-.folder-spread-cards__stage {
-  position: relative;
-  height: 100%;
-  width: 100%;
-}
-
-.folder-spread-cards__cluster {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-}
-
-.folder-spread-cards__card {
-  left: 50%;
-  top: 50%;
-}
-
-/* Undock: spread fan fades; pocket cards live on the rising folder underneath. */
-.folder-view--docked:has(.folder-spread-cards) .elastic-folder-wrapper--active-focus {
-  z-index: 56;
-}
-
 .folder-focus-glow {
   position: absolute;
   left: 2%;
