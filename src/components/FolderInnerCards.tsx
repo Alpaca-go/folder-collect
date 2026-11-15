@@ -177,8 +177,9 @@ export default function FolderInnerCards({
   const screenHandoffActive =
     Boolean(spreadFrom?.length) && spreadPhase == null && spreadWasRetractRef.current
 
-  const showScreenLayer = (screenLiftActive || screenHandoffActive) && spreadPortalEl != null
-  const showPocketLayer = !showScreenLayer && !closing
+  const showScreenLayer =
+    (screenLiftActive || screenHandoffActive) && spreadPortalEl != null && !closing
+  const showPocketLayer = !showScreenLayer
 
   usePocketClipMask(
     pocketRef,
