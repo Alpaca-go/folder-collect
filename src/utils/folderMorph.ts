@@ -11,8 +11,6 @@ export const FOLDER_CENTER_GATHER_DURATION_MS = CABINET_EXIT_DURATION_MS
  * Actual mult is clamped by {@link computeResponsiveCenterGatherSizeMult}.
  */
 export const FOLDER_CENTER_GATHER_SIZE_MULT_MAX = 1.3
-/** @deprecated Use FOLDER_CENTER_GATHER_SIZE_MULT_MAX */
-export const FOLDER_CENTER_GATHER_SIZE_MULT = FOLDER_CENTER_GATHER_SIZE_MULT_MAX
 
 const GATHER_VIEWPORT_PAD_X = 16
 const GATHER_VIEWPORT_PAD_Y = 20
@@ -23,8 +21,6 @@ const GATHER_CENTER_OFFSET_Y = 44
  * Used in DrawerFolderMorphOverlay after runFolderCenterGatherProgress completes.
  */
 export const FOLDER_CENTER_HOLD_AFTER_GATHER_MS = 48
-/** @deprecated Use FOLDER_CENTER_HOLD_AFTER_GATHER_MS */
-export const FOLDER_PAUSE_DURATION_MS = FOLDER_CENTER_HOLD_AFTER_GATHER_MS
 export const FOLDER_MORPH_DURATION_MS = 2200
 /** Delay between each folder start, as a fraction of the total morph timeline. */
 export const MORPH_FOLDER_STAGGER = 0.075
@@ -64,10 +60,6 @@ export interface FolderLayoutSnapshot {
   liftY: number
 }
 
-export function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3)
-}
-
 export function easeInOutQuart(t: number) {
   return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2
 }
@@ -79,25 +71,6 @@ export function smoothstep(t: number) {
 
 export function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
-}
-
-/**
- * Layout box for morph clones. FolderCard uses transform-origin 50% 0% — do not
- * center layout box on the transformed visual rect.
- */
-function measureElementLayoutBox(
-  element: HTMLElement,
-  layout: Omit<FolderLayoutSnapshot, 'left' | 'top' | 'width' | 'height'>,
-) {
-  const rect = element.getBoundingClientRect()
-
-  return {
-    left: rect.left,
-    top: rect.top,
-    width: rect.width,
-    height: rect.height,
-    ...layout,
-  }
 }
 
 /** Layout snapshots from click-time getBoundingClientRect (matches visible drawer slots). */
@@ -308,12 +281,6 @@ export function applyMorphCloneFrame(
   folderEl.style.transformOrigin = `50% ${layout.transformOriginY}%`
 }
 
-/** Smooth scale-up when overlay replaces the clipped drawer view. */
-export function cabinetExitRevealScale(progress: number, from = 0.9) {
-  const t = easeOutCubic(Math.min(1, Math.max(0, progress)))
-  return lerp(from, 1, t)
-}
-
 export function folderClusterCenter(targets: FolderLayoutSnapshot[]) {
   if (targets.length === 0) return { x: 0, y: 0 }
 
@@ -356,29 +323,6 @@ export function viewportCenter() {
   }
 }
 
-/** Keep drawer-relative offsets; move the pile centroid to the viewport center. */
-export function centerFolderTargetsInViewport(targets: FolderLayoutSnapshot[]) {
-  const cluster = folderClusterCenter(targets)
-  const { x: midX, y: midY } = viewportCenter()
-  const dx = midX - cluster.x
-  const dy = midY - cluster.y
-  return translateFolderTargets(targets, dx, dy)
-}
-
-/** Center-gather: translate only — avoids transform/pivot lerps that skew the path. */
-export function lerpFolderLayoutTranslate(
-  from: FolderLayoutSnapshot,
-  to: FolderLayoutSnapshot,
-  t: number,
-) {
-  const u = easeInOutQuart(t)
-  return {
-    ...from,
-    left: lerp(from.left, to.left, u),
-    top: lerp(from.top, to.top, u),
-  }
-}
-
 export function lerpFolderLayout(from: FolderLayoutSnapshot, to: FolderLayoutSnapshot, t: number) {
   const u = easeInOutQuart(t)
   const originU = easeInOutQuart(Math.min(1, t * 2.2))
@@ -406,14 +350,6 @@ export function lerpFolderLayout(from: FolderLayoutSnapshot, to: FolderLayoutSna
   }
 }
 
-export function measureDrawerFolderTargets(count: number): FolderLayoutSnapshot[] {
-  const slots = document.querySelectorAll<HTMLElement>('.drawer-folder-slot-hit')
-
-  return Array.from(slots)
-    .slice(0, count)
-    .map((element) => measureElementLayoutBox(element, DRAWER_MORPH_LAYOUT))
-}
-
 export function measureStackFolderTargets(count: number): FolderLayoutSnapshot[] {
   const wrappers = document.querySelectorAll<HTMLElement>('#cards-stack .elastic-folder-wrapper')
   const targets: FolderLayoutSnapshot[] = []
@@ -434,15 +370,6 @@ export function measureStackFolderTargets(count: number): FolderLayoutSnapshot[]
   }
 
   return targets
-}
-
-export function measureStackFolderRects(count: number) {
-  return measureStackFolderTargets(count).map(({ left, top, width, height }) => ({
-    left,
-    top,
-    width,
-    height,
-  }))
 }
 
 export function runFolderCenterGatherProgress(onUpdate: (progress: number) => void) {
