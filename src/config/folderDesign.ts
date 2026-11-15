@@ -154,14 +154,14 @@ export const SPREAD_PROMOTE = {
    * cards share an even fan step — the pocket fan itself stays untouched.
    */
   centerSpinFan: [
-    { x: -8, y: -6, rotate: -3 },
-    { x: -3, y: -3, rotate: -1 },
-    { x: -9, y: 0, rotate: -3 },
-    { x: 0, y: -5, rotate: 4 },
-    { x: -5, y: 3 },
-    { x: 2, y: -1, rotate: -5 },
-    { x: 5, y: 4, rotate: 4 },
-    { x: 15, y: 10, rotate: -9 },
+    { x: -6, y: -5, rotate: -3 },
+    { x: -1, y: -2, rotate: -1 },
+    { x: -4, y: 0, rotate: -3 },
+    { x: 0, y: -3, rotate: 4 },
+    { x: -2, y: 1 },
+    { x: 2, y: 0, rotate: -5 },
+    { x: 4, y: 3, rotate: 4 },
+    { x: 10, y: 6, rotate: -9 },
   ] as const,
   extraInDurationMs: 420,
   /** Per-card delay step while extra cards animate in. */
