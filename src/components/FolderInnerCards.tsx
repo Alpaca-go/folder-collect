@@ -43,6 +43,8 @@ interface FolderInnerCardsProps {
   folderDocked?: boolean
   dockSinkPx?: number
   retractUndocksFolder?: boolean
+  /** Stack layers on odd indexes are scaleX(-1); the cards counter-flip so every folder animates the same way. */
+  mirrored?: boolean
 }
 
 function scrollPageXBounds(scroll: HTMLElement) {
@@ -156,6 +158,7 @@ export default function FolderInnerCards({
   folderDocked = false,
   dockSinkPx = 0,
   retractUndocksFolder = false,
+  mirrored = false,
 }: FolderInnerCardsProps) {
   const pocketRef = useRef<HTMLDivElement>(null)
   const spreadWasRetractRef = useRef(false)
@@ -573,6 +576,9 @@ export default function FolderInnerCards({
           left: 0,
           right: 0,
           overflow: showPocketLayer ? 'hidden' : 'visible',
+          /** Mirrored stack layers flip the folder; counter-flip the cards so all folders behave the same. */
+          transform: mirrored ? 'scaleX(-1)' : undefined,
+          transformOrigin: '50% 50%',
         }}
       >
         {showPocketLayer ? (
