@@ -152,6 +152,8 @@ export const SPREAD_PROMOTE = {
   centerScale: 1.3,
   /** Vertical drag (px) that flips the top card under the center pile. */
   pileSwitchDragPx: 48,
+  /** How far below the pile the previous card starts before a down-swipe lifts it in (px). */
+  pilePrevRisePx: 150,
   /**
    * Loose stack at page center after the spin (design px @ card face scale),
    * index-aligned with INNER_CARDS. `rotate` nudges the settled angle so no two

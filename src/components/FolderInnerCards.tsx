@@ -243,6 +243,8 @@ export default function FolderInnerCards({
 
   const pileInteractive = spreadPhase === 'settled' && !closing
   const pileDragActive = pileDragRef.current !== null
+  /** Down-swipe pulls the previous card up from under the pile. */
+  const pileDownActive = pileDragActive && pileDragY > 0
 
   const handlePilePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!pileInteractive) return
@@ -416,6 +418,22 @@ export default function FolderInnerCards({
           /** Stacking rank: dragging the top card flips it to the back of the pile. */
           const pileRank = (i + pileShift) % INNER_CARDS.length
           const isPileFront = pileRank === INNER_CARDS.length - 1
+          /** The back card is the one a down-swipe lifts back on top. */
+          const isPilePrev = pileRank === 0
+          const prevProgress = pileDownActive
+            ? Math.min(1, pileDragY / SPREAD_PROMOTE.pileSwitchDragPx)
+            : 0
+          const prevRising = pileDownActive && isPilePrev
+          const pileY = isPileFront
+            ? pileDragY
+            : prevRising
+              ? SPREAD_PROMOTE.pilePrevRisePx * (1 - prevProgress)
+              : 0
+          const pileZ = isPileFront
+            ? 55 + INNER_CARDS.length + 10
+            : prevRising
+              ? 55 + INNER_CARDS.length + 5
+              : 55 + pileRank
 
           return (
             <motion.div
@@ -427,7 +445,7 @@ export default function FolderInnerCards({
                 position: 'fixed',
                 width: portalW,
                 height: portalH,
-                zIndex: 55 + pileRank,
+                zIndex: pileZ,
                 transformOrigin: '50% 50%',
                 borderRadius: portalRadius,
                 boxShadow: `0 ${portalShadowY}px ${portalShadowBlur}px rgba(0,0,0,0.14)`,
@@ -455,8 +473,8 @@ export default function FolderInnerCards({
                 rotate: target.rotate,
                 /** Land with a slight zoom; retract shrinks back to pocket size. */
                 scale: spreadPhase === 'retract' ? 1 : SPREAD_PROMOTE.centerScale,
-                opacity: 1,
-                y: isPileFront ? pileDragY : 0,
+                opacity: prevRising ? 0.15 + 0.85 * prevProgress : 1,
+                y: pileY,
               }}
               transition={
                 spreadPhase === 'settled'
@@ -465,6 +483,7 @@ export default function FolderInnerCards({
                       y: pileDragActive
                         ? { duration: 0 }
                         : { type: 'spring', stiffness: 340, damping: 30 },
+                      opacity: pileDragActive ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' },
                     }
                   : useRetractTween
                     ? useCenterSpinLayout
