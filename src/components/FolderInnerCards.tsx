@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, type Transition } from 'framer-motion'
 import {
@@ -168,7 +168,10 @@ export default function FolderInnerCards({
   /** Center pile: how many times the top card has been flipped to the back. */
   const [pileShift, setPileShift] = useState(0)
   const [pileDragY, setPileDragY] = useState(0)
+  const [pilePrevProgress, setPilePrevProgress] = useState(0)
   const pileDragRef = useRef<{ pointerId: number; startY: number } | null>(null)
+  const prevDropFrameRef = useRef<number | null>(null)
+  const prevDropStartRef = useRef(0)
 
   const spreadPortalEl =
     spreadPortalRoot ?? (typeof document !== 'undefined' ? document.body : null)
@@ -239,12 +242,48 @@ export default function FolderInnerCards({
     pileDragRef.current = null
     setPileShift(0)
     setPileDragY(0)
+    setPilePrevProgress(0)
   }, [spreadPhase])
+
+  useEffect(
+    () => () => {
+      if (prevDropFrameRef.current != null) cancelAnimationFrame(prevDropFrameRef.current)
+    },
+    [],
+  )
 
   const pileInteractive = spreadPhase === 'settled' && !closing
   const pileDragActive = pileDragRef.current !== null
-  /** Down-swipe pulls the previous card up from under the pile. */
+  /** Down-swipe drops the previous card in from above the pile. */
   const pileDownActive = pileDragActive && pileDragY > 0
+
+  /** Time-driven drop, so the incoming card always takes the same beat to land. */
+  const stopPrevDrop = () => {
+    if (prevDropFrameRef.current != null) {
+      cancelAnimationFrame(prevDropFrameRef.current)
+      prevDropFrameRef.current = null
+    }
+  }
+
+  const startPrevDrop = () => {
+    if (prevDropFrameRef.current != null) return
+    prevDropStartRef.current = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - prevDropStartRef.current) / SPREAD_PROMOTE.pilePrevDropMs)
+      setPilePrevProgress(1 - Math.pow(1 - t, 3))
+      if (t < 1) {
+        prevDropFrameRef.current = requestAnimationFrame(tick)
+      } else {
+        prevDropFrameRef.current = null
+      }
+    }
+    prevDropFrameRef.current = requestAnimationFrame(tick)
+  }
+
+  const resetPrevDrop = () => {
+    stopPrevDrop()
+    setPilePrevProgress(0)
+  }
 
   const handlePilePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!pileInteractive) return
@@ -255,6 +294,7 @@ export default function FolderInnerCards({
       /** Synthetic pointers cannot be captured — the card handlers still track the drag. */
     }
     pileDragRef.current = { pointerId: event.pointerId, startY: event.clientY }
+    resetPrevDrop()
     setPileDragY(0)
   }
 
@@ -263,6 +303,7 @@ export default function FolderInnerCards({
     if (!drag || drag.pointerId !== event.pointerId) return
     const deltaY = event.clientY - drag.startY
     if (Math.abs(deltaY) < 2) return
+    if (deltaY > 0) startPrevDrop()
     setPileDragY(deltaY)
   }
 
@@ -281,6 +322,7 @@ export default function FolderInnerCards({
         return next < 0 ? next + INNER_CARDS.length : next
       })
     }
+    resetPrevDrop()
     setPileDragY(0)
   }
 
@@ -418,16 +460,13 @@ export default function FolderInnerCards({
           /** Stacking rank: dragging the top card flips it to the back of the pile. */
           const pileRank = (i + pileShift) % INNER_CARDS.length
           const isPileFront = pileRank === INNER_CARDS.length - 1
-          /** The back card is the one a down-swipe lifts back on top. */
+          /** The back card is the one a down-swipe drops back on top. */
           const isPilePrev = pileRank === 0
-          const prevProgress = pileDownActive
-            ? Math.min(1, pileDragY / SPREAD_PROMOTE.pileSwitchDragPx)
-            : 0
           const prevRising = pileDownActive && isPilePrev
           const pileY = isPileFront
             ? pileDragY
             : prevRising
-              ? -SPREAD_PROMOTE.pilePrevDropPx * (1 - prevProgress)
+              ? -SPREAD_PROMOTE.pilePrevDropPx * (1 - pilePrevProgress)
               : 0
           const pileZ = isPileFront
             ? 55 + INNER_CARDS.length + 10
@@ -473,7 +512,7 @@ export default function FolderInnerCards({
                 rotate: target.rotate,
                 /** Land with a slight zoom; retract shrinks back to pocket size. */
                 scale: spreadPhase === 'retract' ? 1 : SPREAD_PROMOTE.centerScale,
-                opacity: prevRising ? 0.15 + 0.85 * prevProgress : 1,
+                opacity: prevRising ? 0.15 + 0.85 * pilePrevProgress : 1,
                 y: pileY,
               }}
               transition={

@@ -154,6 +154,8 @@ export const SPREAD_PROMOTE = {
   pileSwitchDragPx: 48,
   /** How far above the pile the previous card starts before a down-swipe drops it in (px). */
   pilePrevDropPx: 150,
+  /** How long that drop takes (ms) — time-driven so the beat stays the same at any drag speed. */
+  pilePrevDropMs: 460,
   /**
    * Loose stack at page center after the spin (design px @ card face scale),
    * index-aligned with INNER_CARDS. `rotate` nudges the settled angle so no two
