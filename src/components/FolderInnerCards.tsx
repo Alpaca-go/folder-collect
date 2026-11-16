@@ -390,7 +390,8 @@ export default function FolderInnerCards({
                 left: target.left,
                 top: target.top,
                 rotate: target.rotate,
-                scale: 1,
+                /** Land with a slight zoom; retract shrinks back to pocket size. */
+                scale: spreadPhase === 'retract' ? 1 : SPREAD_PROMOTE.centerScale,
                 opacity: 1,
               }}
               transition={
