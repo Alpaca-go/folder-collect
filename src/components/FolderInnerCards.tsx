@@ -271,8 +271,13 @@ export default function FolderInnerCards({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
-    if (commit && Math.abs(event.clientY - drag.startY) >= SPREAD_PROMOTE.pileSwitchDragPx) {
-      setPileShift((shift) => shift + 1)
+    const deltaY = event.clientY - drag.startY
+    if (commit && Math.abs(deltaY) >= SPREAD_PROMOTE.pileSwitchDragPx) {
+      /** Swipe up = next card (top drops under the pile); swipe down = previous card. */
+      setPileShift((shift) => {
+        const next = (shift + (deltaY < 0 ? 1 : -1)) % INNER_CARDS.length
+        return next < 0 ? next + INNER_CARDS.length : next
+      })
     }
     setPileDragY(0)
   }
