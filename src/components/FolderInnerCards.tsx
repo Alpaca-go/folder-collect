@@ -427,7 +427,7 @@ export default function FolderInnerCards({
           const pileY = isPileFront
             ? pileDragY
             : prevRising
-              ? SPREAD_PROMOTE.pilePrevRisePx * (1 - prevProgress)
+              ? -SPREAD_PROMOTE.pilePrevDropPx * (1 - prevProgress)
               : 0
           const pileZ = isPileFront
             ? 55 + INNER_CARDS.length + 10
