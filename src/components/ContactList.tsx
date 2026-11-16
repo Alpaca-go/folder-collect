@@ -398,8 +398,12 @@ export default function ContactList({
         }${
           upperCopyRevealing ? ' folder-scroll--upper-copy-revealing' : ''
         } ${
+          /**
+           * Stay a scroll box while a folder is open: `overflow: visible` would drop the
+           * element's scroll offset and snap the whole stack back to the top.
+           */
           blockPageScroll
-            ? 'overflow-visible touch-pan-y folder-scroll--overlay-open'
+            ? 'overflow-hidden touch-pan-y folder-scroll--overlay-open'
             : useNativeScroll
               ? 'overflow-y-auto touch-pan-y'
               : 'overflow-y-auto touch-none'

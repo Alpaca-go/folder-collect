@@ -64,7 +64,11 @@ body {
 }
 
 .folder-scroll--docked {
-  overflow: visible !important;
+  /**
+   * Keep the container a scroll box (see the overlay rule below) so docking never drops
+   * the list's scroll offset — the lip and its shadow already sit inside the padding box.
+   */
+  overflow: hidden;
   /* Drop-shadow extends below the docked lip — keep it inside the scroll box. */
   padding-bottom: calc(var(--app-pad-bottom) + 14px);
 }
@@ -122,12 +126,16 @@ body {
 }
 
 /* Open folder: pocket mask spans scroll width; avoid axis clip on descendants. */
-.folder-scroll--overlay-open,
 .folder-scroll--overlay-open .folder-files-layout,
 .folder-scroll--overlay-open #cards-stack,
 .folder-scroll--overlay-open .elastic-folder-wrapper--active-focus,
 .folder-scroll--overlay-open [data-purpose='contact-card'] {
   overflow: visible;
+}
+
+/* The scroll container itself stays a scroll box so its offset survives the open state. */
+.folder-scroll--overlay-open {
+  overflow: hidden;
 }
 
 .elastic-folder-wrapper {
