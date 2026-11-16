@@ -57,6 +57,8 @@ export function pocketCardsClusterLocal(
   clusterOrigin: { x: number; y: number },
   pocketPinOffsetY = 0,
   folderShiftY = 0,
+  /** Mirrored folder: same poses rotated 180° (bottom-right pivot, fan to the left). */
+  mirrored = false,
 ): PocketCardMeasure[] {
   const rect = folderEl.getBoundingClientRect()
   const scale = rect.width / FOLDER_DESIGN.width
@@ -64,27 +66,29 @@ export function pocketCardsClusterLocal(
   const folderTop = rect.top + folderShiftY
   const pocketBottom = folderTop + rect.height * (1 - 16 / FOLDER_DESIGN.height)
   const pocketCenterX = rect.left + rect.width / 2
+  const side = mirrored ? -1 : 1
 
   return INNER_CARDS.map((card) => {
+    /** Peek height is mirror-symmetric, so it always uses the unmirrored angle. */
     const restRotate = innerCardPocketRestRotate(card.rotate)
     const peekY = innerCardPeekYForPose(cardWidth, cardHeight, restRotate, scale)
     const anchorX =
-      pocketCenterX + designPx(FOLDER_DESIGN.innerCardPocketAnchorX + card.x, scale)
+      pocketCenterX + side * designPx(FOLDER_DESIGN.innerCardPocketAnchorX + card.x, scale)
     const pivotY =
       pocketBottom +
       peekY +
       designPx(FOLDER_DESIGN.innerCardPocketAnchorY + card.y, scale)
-    const rad = (restRotate * Math.PI) / 180
+    const rad = (side * restRotate * Math.PI) / 180
     const sin = Math.sin(rad)
     const cos = Math.cos(rad)
-    const offsetX = cardWidth / 2
+    const offsetX = side * (cardWidth / 2)
     const offsetY = -cardHeight / 2
     const centerX = anchorX + offsetX * cos - offsetY * sin
     const centerY = pivotY + offsetX * sin + offsetY * cos + pocketPinOffsetY
     return {
       x: centerX - clusterOrigin.x,
       y: centerY - clusterOrigin.y,
-      rotate: restRotate,
+      rotate: side * restRotate,
       width: cardWidth,
       height: cardHeight,
     }
@@ -132,13 +136,16 @@ export function centerSpinSettledPoses(
   cardHeight: number,
   faceScale: number,
   rotateDeg: number = SPREAD_PROMOTE.centerRotateDeg,
+  /** Mirrored folder: the pile is the mirror image of the unmirrored one. */
+  mirrored = false,
 ): ScreenFixedPose[] {
   const fan = SPREAD_PROMOTE.centerSpinFan
+  const side = mirrored ? -1 : 1
   return from.map((pose, i) => {
     const slot = fan[i] ?? fan[Math.min(i, fan.length - 1)]
-    const ox = designPx(slot.x, faceScale)
+    const ox = side * designPx(slot.x, faceScale)
     const oy = designPx(slot.y, faceScale)
-    const tilt = 'rotate' in slot ? slot.rotate : 0
+    const tilt = side * ('rotate' in slot ? slot.rotate : 0)
     return {
       left: pivot.x + ox - cardWidth / 2,
       top: pivot.y + oy - cardHeight / 2,
@@ -168,12 +175,14 @@ export function pocketScreenFixedPoses(
   clusterOrigin: { x: number; y: number },
   pocketPinOffsetY = 0,
   folderShiftY = 0,
+  mirrored = false,
 ): ScreenFixedPose[] {
   return pocketCardsClusterLocal(
     folderEl,
     clusterOrigin,
     pocketPinOffsetY,
     folderShiftY,
+    mirrored,
   ).map((p) => ({
     left: clusterOrigin.x + p.x - p.width / 2,
     top: clusterOrigin.y + p.y - p.height / 2,

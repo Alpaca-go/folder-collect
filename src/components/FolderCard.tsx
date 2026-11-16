@@ -254,6 +254,7 @@ export default function FolderCard({
           folderDocked={folderDocked}
           dockSinkPx={dockSinkPx}
           retractUndocksFolder={spreadRetractUndock}
+          mirrored={stackFlipped}
         />
       )}
 

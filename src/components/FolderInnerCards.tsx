@@ -43,6 +43,8 @@ interface FolderInnerCardsProps {
   folderDocked?: boolean
   dockSinkPx?: number
   retractUndocksFolder?: boolean
+  /** Mirrored stack layer: the cards present the same poses rotated 180° (artwork stays unflipped). */
+  mirrored?: boolean
 }
 
 function scrollPageXBounds(scroll: HTMLElement) {
@@ -156,6 +158,7 @@ export default function FolderInnerCards({
   folderDocked = false,
   dockSinkPx = 0,
   retractUndocksFolder = false,
+  mirrored = false,
 }: FolderInnerCardsProps) {
   const pocketRef = useRef<HTMLDivElement>(null)
   const spreadWasRetractRef = useRef(false)
@@ -349,7 +352,7 @@ export default function FolderInnerCards({
       }
       if (dockSinkPx > 0) {
         setRetractTargets(
-          pocketScreenFixedPoses(folder, spreadOrigin, 0, -dockSinkPx),
+          pocketScreenFixedPoses(folder, spreadOrigin, 0, -dockSinkPx, mirrored),
         )
         return
       }
@@ -363,7 +366,9 @@ export default function FolderInnerCards({
       return
     }
     const pocketPinOffsetY = dockSinkPx > 0 ? -dockSinkPx : 0
-    setRetractTargets(pocketScreenFixedPoses(folder, spreadOrigin, pocketPinOffsetY))
+    setRetractTargets(
+      pocketScreenFixedPoses(folder, spreadOrigin, pocketPinOffsetY, 0, mirrored),
+    )
   }, [
     spreadPhase,
     spreadOrigin,
@@ -371,6 +376,7 @@ export default function FolderInnerCards({
     useCenterSpinLayout,
     spreadFrom,
     retractUndocksFolder,
+    mirrored,
   ])
 
   const { scale, folderHeight } = useFolderLayoutMetrics(pocketRef)
@@ -431,7 +437,8 @@ export default function FolderInnerCards({
         portalW,
         portalH,
         portalFaceScale,
-        SPREAD_PROMOTE.centerRotateDeg,
+        mirrored ? -SPREAD_PROMOTE.centerRotateDeg : SPREAD_PROMOTE.centerRotateDeg,
+        mirrored,
       )
       return { ...fan[i], width: portalW, height: portalH }
     }
@@ -600,8 +607,14 @@ export default function FolderInnerCards({
               const introDelay =
                 INNER_CARD_INTRO.rotateDelayBase +
                 Math.max(0, i - INNER_DOCK_ONLY_COUNT) * INNER_CARD_INTRO.rotateStaggerSec
-              const restRotate = innerCardPocketRestRotate(card.rotate)
-              const layerX = sharedLayerX + designPx(card.x, scale)
+              /**
+               * Mirrored folders present the same pose rotated 180° — pivot on the bottom-right,
+               * fan to the left, base angle +90° — while the card artwork itself is never flipped.
+               */
+              const poseSign = mirrored ? -1 : 1
+              const restRotate = poseSign * innerCardPocketRestRotate(card.rotate)
+              const poseIntro = poseSign * introFrom
+              const layerX = poseSign * (sharedLayerX + designPx(card.x, scale))
               const layerY = sharedLayerY + designPx(card.y, scale)
               const tuckedY = buryY + designPx(card.y, scale)
               /** Deeper cards stay inside the pocket until the folder docks. */
@@ -620,12 +633,13 @@ export default function FolderInnerCards({
                   data-inner-pocket-card={i}
                   className="absolute overflow-hidden border border-neutral-200/80 bg-white"
                   style={{
-                    left: '50%',
+                    left: mirrored ? undefined : '50%',
+                    right: mirrored ? '50%' : undefined,
                     width: cardWidth,
                     height: cardHeight,
                     bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
                     zIndex: i + 1,
-                    transformOrigin: '0% 100%',
+                    transformOrigin: mirrored ? '100% 100%' : '0% 100%',
                     borderRadius: radius,
                     boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
                   }}
@@ -643,7 +657,7 @@ export default function FolderInnerCards({
                         : {
                             y: layerY,
                             opacity: 1,
-                            rotate: introFrom,
+                            rotate: poseIntro,
                             scale: 0.96,
                             x: layerX,
                           }
@@ -653,7 +667,7 @@ export default function FolderInnerCards({
                       ? {
                           y: tuckedY,
                           opacity: 0,
-                          rotate: introFrom,
+                          rotate: poseIntro,
                           scale: 0.94,
                           x: layerX,
                         }
