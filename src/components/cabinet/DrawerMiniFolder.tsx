@@ -43,7 +43,6 @@ export default function DrawerMiniFolder({
       ? 'default'
       : 'off'
   const stackFlipped = stackLayerHorizontallyFlipped(index)
-  const scaleX = stackFlipped ? -scale : scale
 
   const labelFontSize = morphOverlay ? undefined : `${labelFontSizePx}px`
 
@@ -54,15 +53,15 @@ export default function DrawerMiniFolder({
       style={{
         width: '100%',
         height: '100%',
-        transform: `translateY(${liftY}%) perspective(${perspective}px) rotateX(${rotateX}deg) scale(${scaleX}, ${scale})`,
+        transform: `translateY(${liftY}%) perspective(${perspective}px) rotateX(${rotateX}deg) scale(${scale}, ${scale})`,
         transformOrigin: `50% ${transformOriginY}%`,
       }}
     >
       <div className="drawer-mini-folder-back">
-        <FolderPanelBack panelShadow={panelShadow} />
+        <FolderPanelBack panelShadow={panelShadow} flipped={stackFlipped} />
       </div>
       <div className="drawer-mini-folder-front">
-        <FolderPanelFront stackShadow={stackShadow} />
+        <FolderPanelFront stackShadow={stackShadow} flipped={stackFlipped} />
       </div>
       <div className="drawer-mini-folder-label-layer">
         <FolderStackLabel name={name} flipped={stackFlipped} fontSize={labelFontSize} />

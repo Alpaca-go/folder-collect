@@ -267,7 +267,6 @@ export function applyMorphCloneFrame(
   cloneEl: HTMLElement,
   folderEl: HTMLElement,
   layout: FolderLayoutSnapshot,
-  index: number,
 ) {
   cloneEl.style.left = `${layout.left.toFixed(2)}px`
   cloneEl.style.top = `${layout.top.toFixed(2)}px`
@@ -275,9 +274,8 @@ export function applyMorphCloneFrame(
   cloneEl.style.height = `${layout.height.toFixed(2)}px`
   cloneEl.style.transform = 'translateZ(0)'
 
-  const flipped = stackLayerHorizontallyFlipped(index)
-  const scaleX = flipped ? -layout.scale : layout.scale
-  folderEl.style.transform = `translateY(${layout.liftY}%) perspective(${layout.perspective}px) rotateX(${layout.rotateX}deg) scale(${scaleX}, ${layout.scale})`
+  /** Mirrored layers flip their own artwork — the clone never needs a scaleX transform. */
+  folderEl.style.transform = `translateY(${layout.liftY}%) perspective(${layout.perspective}px) rotateX(${layout.rotateX}deg) scale(${layout.scale}, ${layout.scale})`
   folderEl.style.transformOrigin = `50% ${layout.transformOriginY}%`
 }
 

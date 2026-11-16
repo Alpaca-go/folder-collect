@@ -112,7 +112,7 @@ export default function DrawerFolderMorphOverlay({
         const folderEl = folderRefs.current[index]
         if (!cloneEl || !folderEl) continue
 
-        applyMorphCloneFrame(cloneEl, folderEl, layout, index)
+        applyMorphCloneFrame(cloneEl, folderEl, layout)
       }
     },
     [],

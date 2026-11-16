@@ -275,18 +275,13 @@ export const folderHeightRatio = (value: number) => `${(value / FOLDER_DESIGN.he
 export const folderFontSize = (value: number) => `calc(100cqw * ${value / FOLDER_DESIGN.width})`
 
 /**
- * Label inset when the folder card uses `scaleX(-1)` on the root.
- * Anchor the label on the mirrored tab (local `left` ≈ visual right) and grow text inward.
+ * Label inset for a mirrored folder — only the panel artwork is mirrored, so the label
+ * simply moves to the opposite tab and keeps reading left-to-right.
  */
 export function folderStackLabelInset(flipped: boolean) {
   const inset = folderWidthRatio(FOLDER_DESIGN.labelLeft)
   if (!flipped) {
     return { left: inset, right: undefined, transform: undefined, transformOrigin: undefined }
   }
-  return {
-    left: inset,
-    right: undefined,
-    transform: 'translateX(-100%) scaleX(-1)',
-    transformOrigin: '100% 0%',
-  }
+  return { left: undefined, right: inset, transform: undefined, transformOrigin: undefined }
 }

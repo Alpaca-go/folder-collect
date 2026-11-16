@@ -43,11 +43,20 @@ function frontStackFilter(shadow: FolderPanelShadow) {
 interface FolderPanelBackProps {
   flapOpen?: boolean
   panelShadow?: FolderPanelShadow
+  /** Mirrored stack layer: flip the artwork only, never the folder's contents. */
+  flipped?: boolean
 }
 
-export function FolderPanelBack({ flapOpen = false, panelShadow = 'off' }: FolderPanelBackProps) {
+export function FolderPanelBack({
+  flapOpen = false,
+  panelShadow = 'off',
+  flipped = false,
+}: FolderPanelBackProps) {
   return (
-    <div className="folder-panel-stage">
+    <div
+      className="folder-panel-stage"
+      style={{ transform: flipped ? 'scaleX(-1)' : undefined }}
+    >
       <img
         src={folderPanelBackUrl}
         alt=""
@@ -65,11 +74,16 @@ export function FolderPanelBack({ flapOpen = false, panelShadow = 'off' }: Folde
 
 interface FolderPanelFrontProps {
   stackShadow?: FolderPanelShadow
+  /** Mirrored stack layer: flip the artwork only, never the folder's contents. */
+  flipped?: boolean
 }
 
-export function FolderPanelFront({ stackShadow = 'off' }: FolderPanelFrontProps) {
+export function FolderPanelFront({ stackShadow = 'off', flipped = false }: FolderPanelFrontProps) {
   return (
-    <div className="folder-panel-stage">
+    <div
+      className="folder-panel-stage"
+      style={{ transform: flipped ? 'scaleX(-1)' : undefined }}
+    >
       <img
         src={folderPanelFrontUrl}
         alt=""

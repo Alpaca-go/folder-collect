@@ -148,7 +148,7 @@ export default function FolderCard({
             : 0,
         opacity: mode === 'inactive' ? 0 : 1,
         rotateX: isCentered ? ACTIVE_ROTATE_X : FOLDER_ROTATE_X,
-        scaleX: stackFlipped ? -stackScale : stackScale,
+        scaleX: stackScale,
         scaleY: stackScale,
       }}
       transition={{
@@ -216,7 +216,11 @@ export default function FolderCard({
       )}
 
       <div className="folder-panel-back absolute inset-0 z-10 pointer-events-none">
-        <FolderPanelBack flapOpen={backFlapClipOpen} panelShadow={usePanelShadow ? 'default' : 'off'} />
+        <FolderPanelBack
+          flapOpen={backFlapClipOpen}
+          panelShadow={usePanelShadow ? 'default' : 'off'}
+          flipped={stackFlipped}
+        />
         <FolderStackLabel name={name} flipped={stackFlipped} />
       </div>
 
@@ -250,7 +254,6 @@ export default function FolderCard({
           folderDocked={folderDocked}
           dockSinkPx={dockSinkPx}
           retractUndocksFolder={spreadRetractUndock}
-          mirrored={stackFlipped}
         />
       )}
 
@@ -295,7 +298,7 @@ export default function FolderCard({
             }}
           />
         )}
-        <FolderPanelFront stackShadow={useStackShadow ? 'default' : 'off'} />
+        <FolderPanelFront stackShadow={useStackShadow ? 'default' : 'off'} flipped={stackFlipped} />
       </motion.div>
     </motion.div>
   )
