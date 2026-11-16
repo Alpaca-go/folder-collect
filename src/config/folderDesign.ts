@@ -148,8 +148,10 @@ export const SPREAD_PROMOTE = {
   centerRotateDeg: 90,
   centerRotateDurationMs: 720,
   centerSpinStaggerSec: 0.02,
-  /** Slight zoom once the cards land on the page-center pile (1 = pocket size). */
-  centerScale: 1.07,
+  /** Scale the cards settle at once they reach the page-center pile (1 = pocket size). */
+  centerScale: 1.3,
+  /** Vertical drag (px) that flips the top card under the center pile. */
+  pileSwitchDragPx: 48,
   /**
    * Loose stack at page center after the spin (design px @ card face scale),
    * index-aligned with INNER_CARDS. `rotate` nudges the settled angle so no two

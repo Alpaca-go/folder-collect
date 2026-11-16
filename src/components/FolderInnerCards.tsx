@@ -165,6 +165,10 @@ export default function FolderInnerCards({
   const [retractTargets, setRetractTargets] = useState<ScreenFixedPose[] | null>(null)
   const [spinPivot, setSpinPivot] = useState<{ x: number; y: number } | null>(null)
   const [pocketRestInstant, setPocketRestInstant] = useState(false)
+  /** Center pile: how many times the top card has been flipped to the back. */
+  const [pileShift, setPileShift] = useState(0)
+  const [pileDragY, setPileDragY] = useState(0)
+  const pileDragRef = useRef<{ pointerId: number; startY: number } | null>(null)
 
   const spreadPortalEl =
     spreadPortalRoot ?? (typeof document !== 'undefined' ? document.body : null)
@@ -228,6 +232,50 @@ export default function FolderInnerCards({
     const id = requestAnimationFrame(() => setPocketRestInstant(false))
     return () => cancelAnimationFrame(id)
   }, [pocketRestInstant])
+
+  /** A fresh spin starts the pile from its original order. */
+  useLayoutEffect(() => {
+    if (spreadPhase !== 'hold' && spreadPhase !== 'gather' && spreadPhase !== 'centerSpin') return
+    pileDragRef.current = null
+    setPileShift(0)
+    setPileDragY(0)
+  }, [spreadPhase])
+
+  const pileInteractive = spreadPhase === 'settled' && !closing
+  const pileDragActive = pileDragRef.current !== null
+
+  const handlePilePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!pileInteractive) return
+    event.stopPropagation()
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      /** Synthetic pointers cannot be captured — the card handlers still track the drag. */
+    }
+    pileDragRef.current = { pointerId: event.pointerId, startY: event.clientY }
+    setPileDragY(0)
+  }
+
+  const handlePilePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = pileDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const deltaY = event.clientY - drag.startY
+    if (Math.abs(deltaY) < 2) return
+    setPileDragY(deltaY)
+  }
+
+  const finishPileDrag = (event: React.PointerEvent<HTMLDivElement>, commit: boolean) => {
+    const drag = pileDragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    pileDragRef.current = null
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    if (commit && Math.abs(event.clientY - drag.startY) >= SPREAD_PROMOTE.pileSwitchDragPx) {
+      setPileShift((shift) => shift + 1)
+    }
+    setPileDragY(0)
+  }
 
   useLayoutEffect(() => {
     if (spreadPhase !== 'gather' && spreadPhase !== 'centerSpin') return
@@ -360,6 +408,10 @@ export default function FolderInnerCards({
           const useCenterSpinTween = spreadPhase === 'centerSpin'
           const useRetractTween = spreadPhase === 'retract'
 
+          /** Stacking rank: dragging the top card flips it to the back of the pile. */
+          const pileRank = (i + pileShift) % INNER_CARDS.length
+          const isPileFront = pileRank === INNER_CARDS.length - 1
+
           return (
             <motion.div
               key={`pocket-card-${i}`}
@@ -370,11 +422,17 @@ export default function FolderInnerCards({
                 position: 'fixed',
                 width: portalW,
                 height: portalH,
-                zIndex: 55 + i,
+                zIndex: 55 + pileRank,
                 transformOrigin: '50% 50%',
                 borderRadius: portalRadius,
                 boxShadow: `0 ${portalShadowY}px ${portalShadowBlur}px rgba(0,0,0,0.14)`,
+                pointerEvents: pileInteractive ? 'auto' : 'none',
+                touchAction: 'none',
               }}
+              onPointerDown={handlePilePointerDown}
+              onPointerMove={handlePilePointerMove}
+              onPointerUp={(event) => finishPileDrag(event, true)}
+              onPointerCancel={(event) => finishPileDrag(event, false)}
               initial={
                 useGatherSpring || useCenterSpinTween
                   ? {
@@ -393,10 +451,16 @@ export default function FolderInnerCards({
                 /** Land with a slight zoom; retract shrinks back to pocket size. */
                 scale: spreadPhase === 'retract' ? 1 : SPREAD_PROMOTE.centerScale,
                 opacity: 1,
+                y: isPileFront ? pileDragY : 0,
               }}
               transition={
                 spreadPhase === 'settled'
-                  ? { duration: 0 }
+                  ? {
+                      duration: 0,
+                      y: pileDragActive
+                        ? { duration: 0 }
+                        : { type: 'spring', stiffness: 340, damping: 30 },
+                    }
                   : useRetractTween
                     ? useCenterSpinLayout
                       ? {
