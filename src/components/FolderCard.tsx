@@ -11,6 +11,8 @@ import FolderInnerCards from './FolderInnerCards'
 import FolderStackLabel from './FolderStackLabel'
 import { FolderPanelBack, FolderPanelFront } from './FolderPanelLayers'
 import { stackLayerHorizontallyFlipped, stackZIndexForIndex } from '../utils/folderMorph'
+import type { InnerPocketCardArt } from '../config/folderInnerCardArt'
+import type { PileFocusScrimState } from './FolderInnerCards'
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
 
 type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
@@ -50,6 +52,8 @@ interface FolderCardProps {
   centerYSyncUndock?: boolean
   dockSinkPx?: number
   spreadRetractUndock?: boolean
+  innerCardArt?: readonly InnerPocketCardArt[]
+  onPileCardFocusChange?: (scrim: PileFocusScrimState) => void
 }
 
 export default function FolderCard({
@@ -74,6 +78,8 @@ export default function FolderCard({
   centerYSyncUndock = false,
   dockSinkPx = 0,
   spreadRetractUndock = false,
+  innerCardArt,
+  onPileCardFocusChange,
 }: FolderCardProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const [flapHeldOpenForPocket, setFlapHeldOpenForPocket] = useState(false)
@@ -255,6 +261,8 @@ export default function FolderCard({
           dockSinkPx={dockSinkPx}
           retractUndocksFolder={spreadRetractUndock}
           mirrored={stackFlipped}
+          innerCardArt={innerCardArt}
+          onPileCardFocusChange={onPileCardFocusChange}
         />
       )}
 

@@ -1,6 +1,8 @@
 import { useRef } from 'react'
 import { useMotionValueEvent, type MotionValue } from 'framer-motion'
 import FolderCard, { type FolderMode } from './FolderCard'
+import type { InnerPocketCardArt } from '../config/folderInnerCardArt'
+import type { PileFocusScrimState } from './FolderInnerCards'
 import type { SpreadCardLayout } from '../utils/innerCardSpread'
 
 type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
@@ -32,6 +34,8 @@ interface StackFolderItemProps {
   centerYSyncUndock?: boolean
   dockSinkPx?: number
   spreadRetractUndock?: boolean
+  innerCardArt?: readonly InnerPocketCardArt[]
+  onPileCardFocusChange?: (scrim: PileFocusScrimState) => void
 }
 
 export default function StackFolderItem({
@@ -60,6 +64,8 @@ export default function StackFolderItem({
   centerYSyncUndock = false,
   dockSinkPx = 0,
   spreadRetractUndock = false,
+  innerCardArt,
+  onPileCardFocusChange,
 }: StackFolderItemProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -99,6 +105,8 @@ export default function StackFolderItem({
         centerYSyncUndock={centerYSyncUndock}
         dockSinkPx={dockSinkPx}
         spreadRetractUndock={spreadRetractUndock}
+        innerCardArt={innerCardArt}
+        onPileCardFocusChange={onPileCardFocusChange}
       />
     </div>
   )

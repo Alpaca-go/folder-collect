@@ -40,9 +40,10 @@ export const FOLDER_DESIGN = {
  * Pivot: visual bottom-right at rest → element `transformOrigin: 0% 100%` (bottom-left).
  * `y` pushes a card deeper into the pocket, `dockOnly` cards stay tucked while the
  * folder is open and slide out behind the trio once it docks — so the spread leaves
- * with a loose eight-card stack instead of a tidy three-card fan.
+ * with a loose nine-card stack instead of a tidy three-card fan.
  */
 export const INNER_CARDS = [
+  { rotate: -5, x: -11, y: 51, dockOnly: true },
   { rotate: -4, x: -4, y: 44, dockOnly: true },
   { rotate: 6, x: 3, y: 36, dockOnly: true },
   { rotate: 1, x: 10, y: 29, dockOnly: true },
@@ -149,27 +150,41 @@ export const SPREAD_PROMOTE = {
   centerRotateDurationMs: 720,
   centerSpinStaggerSec: 0.02,
   /** Scale the cards settle at once they reach the page-center pile (1 = pocket size). */
-  centerScale: 1.3,
+  centerScale: 1.42,
+  /**
+   * After dock spin: how much each card keeps its pocket fan angle in the pile (0 = uniform upright).
+   */
+  centerSpinPocketRotateRetain: 0.12,
   /** Vertical drag (px) that flips the top card under the center pile. */
   pileSwitchDragPx: 48,
   /** How far above the pile the previous card starts before a down-swipe drops it in (px). */
   pilePrevDropPx: 150,
   /** How long that drop takes (ms) — time-driven so the beat stays the same at any drag speed. */
   pilePrevDropMs: 460,
+  /** Docked center pile: darken cards under the top (brightness multiplier per layer). */
+  pileStackDimStep: 0.028,
+  pileStackDimMin: 0.84,
+  /** Tap a pile card in `settled` → single-card focus at viewport center. */
+  centerFocusScale: 1.88,
+  centerFocusDurationSec: 0.48,
+  pileFocusTapPx: 10,
+  /** Black scrim over page + pile peers while one card is focused (0–1). */
+  pileFocusMaskOpacity: 0.25,
   /**
    * Loose stack at page center after the spin (design px @ card face scale),
    * index-aligned with INNER_CARDS. `rotate` nudges the settled angle so no two
    * cards share an even fan step — the pocket fan itself stays untouched.
    */
   centerSpinFan: [
-    { x: -6, y: -5, rotate: -3 },
-    { x: -1, y: -2, rotate: -1 },
-    { x: -4, y: 0, rotate: -3 },
-    { x: 0, y: -3, rotate: 4 },
-    { x: -2, y: 1 },
-    { x: 2, y: 0, rotate: -5 },
-    { x: 4, y: 3, rotate: 4 },
-    { x: 10, y: 6, rotate: -9 },
+    { x: -5, y: -4, rotate: 5.5 },
+    { x: -1, y: -3, rotate: -6 },
+    { x: 4, y: -2, rotate: 5 },
+    { x: -3, y: -1, rotate: -5.5 },
+    { x: 3, y: -2, rotate: 6.5 },
+    { x: -1, y: 0, rotate: -5 },
+    { x: 5, y: 1, rotate: 4.5 },
+    { x: 1, y: 2, rotate: -7 },
+    { x: 6, y: 3, rotate: 6 },
   ] as const,
   extraInDurationMs: 420,
   /** Per-card delay step while extra cards animate in. */
