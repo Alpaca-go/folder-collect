@@ -63,6 +63,17 @@ body {
   overflow: visible;
 }
 
+/* Black scrim above page chrome while a pile card is focused (opacity set inline). */
+.folder-pile-focus-page-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 51;
+  pointer-events: none;
+  background: #000;
+  transition: opacity 0.32s ease-out;
+}
+
+
 .folder-scroll--docked {
   /**
    * Keep the container a scroll box (see the overlay rule below) so docking never drops

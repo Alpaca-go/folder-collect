@@ -141,15 +141,23 @@ export function centerSpinSettledPoses(
 ): ScreenFixedPose[] {
   const fan = SPREAD_PROMOTE.centerSpinFan
   const side = mirrored ? -1 : 1
+  const retain = SPREAD_PROMOTE.centerSpinPocketRotateRetain
+  const avgUpright =
+    from.length > 0
+      ? from.reduce((sum, pose) => sum + pose.rotate + rotateDeg, 0) / from.length
+      : rotateDeg
+
   return from.map((pose, i) => {
     const slot = fan[i] ?? fan[Math.min(i, fan.length - 1)]
     const ox = side * designPx(slot.x, faceScale)
     const oy = designPx(slot.y, faceScale)
     const tilt = side * ('rotate' in slot ? slot.rotate : 0)
+    const upright = pose.rotate + rotateDeg
+    const blendedUpright = avgUpright + (upright - avgUpright) * retain
     return {
       left: pivot.x + ox - cardWidth / 2,
       top: pivot.y + oy - cardHeight / 2,
-      rotate: pose.rotate + rotateDeg + tilt,
+      rotate: blendedUpright + tilt,
     }
   })
 }

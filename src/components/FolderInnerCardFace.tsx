@@ -1,10 +1,23 @@
 import { designPx, FOLDER_DESIGN } from '../config/folderDesign'
+import { innerPocketArtDropShadow } from '../config/folderInnerCardArt'
 
 interface FolderInnerCardFaceProps {
   scale: number
+  artSrc?: string
 }
 
-export default function FolderInnerCardFace({ scale }: FolderInnerCardFaceProps) {
+export default function FolderInnerCardFace({ scale, artSrc }: FolderInnerCardFaceProps) {
+  if (artSrc) {
+    return (
+      <img
+        src={artSrc}
+        alt=""
+        draggable={false}
+        className="pointer-events-none block h-full w-full select-none"
+        style={{ filter: innerPocketArtDropShadow(scale) }}
+      />
+    )
+  }
   const skeletonPad = designPx(FOLDER_DESIGN.innerCardSkeletonPad, scale)
   const skeletonLinePrimary = designPx(FOLDER_DESIGN.innerCardSkeletonLinePrimary, scale)
   const skeletonLineSecondary = designPx(FOLDER_DESIGN.innerCardSkeletonLineSecondary, scale)

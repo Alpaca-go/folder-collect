@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom'
 import { contacts } from '../data/contacts'
 import { type FolderMode } from './FolderCard'
 import StackFolderItem from './StackFolderItem'
+import type { PileFocusScrimState } from './FolderInnerCards'
 import { useElasticFolderStack } from '../hooks/useElasticFolderStack'
 import { getMaxRevealSteps, getRevealStep } from '../utils/folderRevealOrder'
 import { FOLDER_ASPECT_RATIO } from '../config/folderImageLayout'
@@ -21,6 +22,7 @@ import {
   innerCardPocketFlapStartMs,
 } from '../config/folderDesign'
 import { spreadClusterOriginFromHost } from '../utils/pocketCardGeometry'
+import { FIRST_FOLDER_INNER_POCKET_ART } from '../config/folderInnerCardArt'
 import CabinetHomeHero from './cabinet/CabinetHomeHero'
 import BackToCabinetButton from './cabinet/BackToCabinetButton'
 
@@ -83,6 +85,10 @@ export default function ContactList({
   const [spreadOrigin, setSpreadOrigin] = useState<{ x: number; y: number } | null>(null)
   const [dockPinBaselineY, setDockPinBaselineY] = useState<number | null>(null)
   const [spreadRetractUndock, setSpreadRetractUndock] = useState(false)
+  const [pileFocusScrim, setPileFocusScrim] = useState<PileFocusScrimState>({
+    active: false,
+    dismissing: false,
+  })
   const viewHostRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLElement>(null)
   const closeTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -414,6 +420,21 @@ export default function ContactList({
         onPointerUpCapture={onPointerUp}
         onPointerCancelCapture={onPointerUp}
       >
+        <div
+          aria-hidden={!pileFocusScrim.active}
+          className="folder-pile-focus-page-mask"
+          data-purpose="pile-focus-page-mask"
+          style={{
+            opacity: pileFocusScrim.active
+              ? pileFocusScrim.dismissing
+                ? 0
+                : SPREAD_PROMOTE.pileFocusMaskOpacity
+              : 0,
+            transition: pileFocusScrim.dismissing
+              ? `opacity ${SPREAD_PROMOTE.centerFocusDurationSec}s cubic-bezier(0.33, 0, 0.18, 1)`
+              : 'opacity 0.32s ease-out',
+          }}
+        />
         {isOverlayOpen && !closePhase && (
           <button
             type="button"
@@ -546,6 +567,10 @@ export default function ContactList({
                 }
                 spreadRetractUndock={
                   activeId === contact.id && spreadRetractUndock
+                }
+                innerCardArt={index === 0 ? FIRST_FOLDER_INNER_POCKET_ART : undefined}
+                onPileCardFocusChange={
+                  activeId === contact.id ? setPileFocusScrim : undefined
                 }
               />
             )

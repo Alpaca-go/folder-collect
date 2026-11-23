@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, type Transition } from 'framer-motion'
 import {
@@ -26,6 +26,8 @@ import {
   type ScreenFixedPose,
 } from '../utils/pocketCardGeometry'
 import { screenFixedPoseFromPocketCard } from '../utils/measureScreenCardPins'
+import type { InnerPocketCardArt } from '../config/folderInnerCardArt'
+import { innerPocketCardSize } from '../config/folderInnerCardArt'
 import FolderInnerCardFace from './FolderInnerCardFace'
 
 type PocketSpreadPhase = 'hold' | 'centerSpin' | 'gather' | 'settled' | 'retract'
@@ -45,6 +47,44 @@ interface FolderInnerCardsProps {
   retractUndocksFolder?: boolean
   /** Mirrored stack layer: the cards present the same poses rotated 180° (artwork stays unflipped). */
   mirrored?: boolean
+  /** Art per pocket index (replaces placeholder card chrome). Length should match `INNER_CARDS`. */
+  innerCardArt?: readonly InnerPocketCardArt[]
+  onPileCardFocusChange?: (scrim: PileFocusScrimState) => void
+}
+
+export type PileFocusScrimState = {
+  /** Scrim should be painted (enter hold or exit fade). */
+  active: boolean
+  /** Exiting focus — fade scrim out in sync with card return. */
+  dismissing: boolean
+}
+
+function pocketCardClass(usesArt: boolean) {
+  return usesArt
+    ? 'absolute overflow-visible'
+    : 'absolute overflow-hidden border border-neutral-200/80 bg-white'
+}
+
+function placeholderCardBoxShadow(shadowY: number, shadowBlur: number) {
+  return `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`
+}
+
+function pileStackBrightness(
+  cardIndex: number,
+  pileShift: number,
+  opts: { isPileFront: boolean; isPrevRising?: boolean },
+): number {
+  if (opts.isPileFront || opts.isPrevRising) return 1
+  const pileRank = (cardIndex + pileShift) % INNER_CARDS.length
+  const pileDepthFromTop = INNER_CARDS.length - 1 - pileRank
+  return Math.max(
+    SPREAD_PROMOTE.pileStackDimMin,
+    1 - pileDepthFromTop * SPREAD_PROMOTE.pileStackDimStep,
+  )
+}
+
+function pileStackBrightnessFilter(brightness: number): string | undefined {
+  return brightness < 1 ? `brightness(${brightness})` : undefined
 }
 
 function scrollPageXBounds(scroll: HTMLElement) {
@@ -159,6 +199,8 @@ export default function FolderInnerCards({
   dockSinkPx = 0,
   retractUndocksFolder = false,
   mirrored = false,
+  innerCardArt,
+  onPileCardFocusChange,
 }: FolderInnerCardsProps) {
   const pocketRef = useRef<HTMLDivElement>(null)
   const spreadWasRetractRef = useRef(false)
@@ -172,7 +214,16 @@ export default function FolderInnerCards({
   const [pileShift, setPileShift] = useState(0)
   const [pileDragY, setPileDragY] = useState(0)
   const [pilePrevProgress, setPilePrevProgress] = useState(0)
-  const pileDragRef = useRef<{ pointerId: number; startY: number } | null>(null)
+  const [focusedCardIndex, setFocusedCardIndex] = useState<number | null>(null)
+  const [focusDismissAnimating, setFocusDismissAnimating] = useState(false)
+  const focusedCardIndexRef = useRef<number | null>(null)
+  const focusDismissTimerRef = useRef<number | null>(null)
+  const pileDragRef = useRef<{
+    pointerId: number
+    startY: number
+    startX: number
+    cardIndex: number
+  } | null>(null)
   const prevDropFrameRef = useRef<number | null>(null)
   const prevDropStartRef = useRef(0)
 
@@ -248,15 +299,75 @@ export default function FolderInnerCards({
     setPilePrevProgress(0)
   }, [spreadPhase])
 
+  useLayoutEffect(() => {
+    if (spreadPhase === 'settled') return
+    if (focusDismissTimerRef.current != null) {
+      window.clearTimeout(focusDismissTimerRef.current)
+      focusDismissTimerRef.current = null
+    }
+    setFocusDismissAnimating(false)
+    setFocusedCardIndex(null)
+  }, [spreadPhase])
+
+  useEffect(() => {
+    focusedCardIndexRef.current = focusedCardIndex
+  }, [focusedCardIndex])
+
+  const dismissCardFocus = useCallback(() => {
+    if (focusedCardIndexRef.current === null) return
+    setFocusDismissAnimating(true)
+    setFocusedCardIndex(null)
+    if (focusDismissTimerRef.current != null) {
+      window.clearTimeout(focusDismissTimerRef.current)
+    }
+    focusDismissTimerRef.current = window.setTimeout(() => {
+      focusDismissTimerRef.current = null
+      setFocusDismissAnimating(false)
+    }, SPREAD_PROMOTE.centerFocusDurationSec * 1000)
+  }, [])
+
+  const enterCardFocus = useCallback((cardIndex: number) => {
+    if (focusDismissTimerRef.current != null) {
+      window.clearTimeout(focusDismissTimerRef.current)
+      focusDismissTimerRef.current = null
+    }
+    setFocusDismissAnimating(false)
+    setFocusedCardIndex(cardIndex)
+  }, [])
+
+  useEffect(() => {
+    onPileCardFocusChange?.({
+      active: focusedCardIndex !== null || focusDismissAnimating,
+      dismissing: focusDismissAnimating,
+    })
+  }, [focusedCardIndex, focusDismissAnimating, onPileCardFocusChange])
+
+  useEffect(() => {
+    if (focusedCardIndex === null) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') dismissCardFocus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [focusedCardIndex, dismissCardFocus])
+
   useEffect(
     () => () => {
       if (prevDropFrameRef.current != null) cancelAnimationFrame(prevDropFrameRef.current)
+      if (focusDismissTimerRef.current != null) window.clearTimeout(focusDismissTimerRef.current)
     },
     [],
   )
 
   const pileInteractive = spreadPhase === 'settled' && !closing
+  const pileFocusActive = focusedCardIndex !== null
+  const pileFocusGeometryTween = pileFocusActive || focusDismissAnimating
   const pileDragActive = pileDragRef.current !== null
+  const pileSettledYSpring = {
+    type: 'spring' as const,
+    stiffness: 340,
+    damping: 30,
+  }
   /** Down-swipe drops the previous card in from above the pile. */
   const pileDownActive = pileDragActive && pileDragY > 0
 
@@ -288,7 +399,10 @@ export default function FolderInnerCards({
     setPilePrevProgress(0)
   }
 
-  const handlePilePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePilePointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+    cardIndex: number,
+  ) => {
     if (!pileInteractive) return
     event.stopPropagation()
     try {
@@ -296,12 +410,18 @@ export default function FolderInnerCards({
     } catch {
       /** Synthetic pointers cannot be captured — the card handlers still track the drag. */
     }
-    pileDragRef.current = { pointerId: event.pointerId, startY: event.clientY }
+    pileDragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startX: event.clientX,
+      cardIndex,
+    }
     resetPrevDrop()
-    setPileDragY(0)
+    if (!pileFocusActive) setPileDragY(0)
   }
 
   const handlePilePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (pileFocusActive) return
     const drag = pileDragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
     const deltaY = event.clientY - drag.startY
@@ -310,14 +430,39 @@ export default function FolderInnerCards({
     setPileDragY(deltaY)
   }
 
-  const finishPileDrag = (event: React.PointerEvent<HTMLDivElement>, commit: boolean) => {
+  const finishPileDrag = (
+    event: React.PointerEvent<HTMLDivElement>,
+    commit: boolean,
+    cardIndex: number,
+  ) => {
     const drag = pileDragRef.current
-    if (!drag || drag.pointerId !== event.pointerId) return
+    if (!drag || drag.pointerId !== event.pointerId || drag.cardIndex !== cardIndex) return
     pileDragRef.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
     const deltaY = event.clientY - drag.startY
+    const deltaX = event.clientX - drag.startX
+    const tapSlop = SPREAD_PROMOTE.pileFocusTapPx
+    const isTap = commit && Math.abs(deltaY) < tapSlop && Math.abs(deltaX) < tapSlop
+
+    if (isTap && pileInteractive) {
+      if (focusedCardIndex === cardIndex) {
+        dismissCardFocus()
+      } else {
+        enterCardFocus(cardIndex)
+      }
+      resetPrevDrop()
+      setPileDragY(0)
+      return
+    }
+
+    if (pileFocusActive) {
+      resetPrevDrop()
+      setPileDragY(0)
+      return
+    }
+
     if (commit && Math.abs(deltaY) >= SPREAD_PROMOTE.pileSwitchDragPx) {
       /** Swipe up = next card (top drops under the pile); swipe down = previous card. */
       setPileShift((shift) => {
@@ -391,7 +536,13 @@ export default function FolderInnerCards({
     homeScreenPosesRef.current = cards.map((el) => screenFixedPoseFromPocketCard(el))
   }, [closing, folderDocked, spreadPhase, showPocketLayer, viewportPinY])
 
-  const { width: cardWidth, height: cardHeight } = innerCardSize(scale)
+  const fallbackCardSize = innerCardSize(scale)
+  const pocketCardSizes = INNER_CARDS.map((_, i) => {
+    const art = innerCardArt?.[i]
+    return art ? innerPocketCardSize(scale, art) : fallbackCardSize
+  })
+  const cardWidth = fallbackCardSize.width
+  const cardHeight = Math.max(...pocketCardSizes.map((s) => s.height))
   const introFrom = innerCardPocketIntroRotate()
   const radius = designPx(FOLDER_DESIGN.innerCardRadius, scale)
   const shadowY = designPx(FOLDER_DESIGN.innerCardShadowY, scale)
@@ -405,10 +556,6 @@ export default function FolderInnerCards({
   )
   const sharedLayerY = sharedPeekY + designPx(FOLDER_DESIGN.innerCardPocketAnchorY, scale)
   const sharedLayerX = designPx(FOLDER_DESIGN.innerCardPocketAnchorX, scale)
-  const buryY =
-    innerCardHiddenYForPose(cardWidth, cardHeight, introFrom, scale) +
-    designPx(FOLDER_DESIGN.innerCardPocketAnchorY + FOLDER_DESIGN.innerCardCloseBuryExtra, scale)
-
   const screenTargetForCard = (i: number): ScreenFixedPose | null => {
     const layout = spreadLayouts?.[i]
     const from = spreadFrom?.[i]
@@ -445,17 +592,57 @@ export default function FolderInnerCards({
     return { ...settled, width: portalW, height: portalH }
   }
 
+  const viewportCenter = spreadPortalRoot
+    ? pageCenterFromElement(spreadPortalRoot)
+    : typeof window !== 'undefined'
+      ? { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+      : { x: 0, y: 0 }
+
+  const focusEase = [0.33, 0, 0.18, 1] as const
+  const focusTransition = {
+    duration: SPREAD_PROMOTE.centerFocusDurationSec,
+    ease: focusEase,
+  }
+
   const screenOverlay =
     showScreenLayer && spreadFrom ? (
-      <div className="pointer-events-none fixed inset-0 z-[55]" data-inner-pocket-spread-portal>
+      <>
+        <motion.div
+          aria-hidden={!pileFocusActive && !focusDismissAnimating}
+          role="presentation"
+          className="fixed inset-0 z-[53] cursor-default bg-black"
+          initial={false}
+          animate={{
+            opacity: pileFocusActive ? SPREAD_PROMOTE.pileFocusMaskOpacity : 0,
+          }}
+          transition={{
+            opacity: {
+              duration: focusDismissAnimating
+                ? SPREAD_PROMOTE.centerFocusDurationSec
+                : 0.32,
+              ease: focusDismissAnimating ? focusEase : 'easeOut',
+            },
+          }}
+          style={{
+            pointerEvents: pileFocusActive || focusDismissAnimating ? 'auto' : 'none',
+          }}
+          onClick={dismissCardFocus}
+          data-inner-pile-focus-mask
+        />
+        <div
+          className="pointer-events-none fixed inset-0 z-[55]"
+          data-inner-pocket-spread-portal
+        >
         {INNER_CARDS.map((_, i) => {
           const from = spreadFrom[i]
           const target = screenTargetForCard(i)
           if (!from || !target) return null
 
-          const portalW = from.width ?? cardWidth
-          const portalH = from.height ?? cardHeight
-          const portalScale = portalW / cardWidth
+          const pocketSize = pocketCardSizes[i]
+          const portalW = from.width ?? pocketSize.width
+          const portalH = from.height ?? pocketSize.height
+          const portalScale = portalW / pocketSize.width
+          const usesArt = Boolean(innerCardArt?.[i])
           const portalRadius = radius * portalScale
           const portalShadowY = shadowY * portalScale
           const portalShadowBlur = shadowBlur * portalScale
@@ -480,28 +667,40 @@ export default function FolderInnerCards({
             : prevRising
               ? 55 + INNER_CARDS.length + 5
               : 55 + pileRank
+          const isCardFocused = focusedCardIndex === i
+          const isPeerObscured = pileFocusActive && !isCardFocused
+          const pileBrightness = pileStackBrightness(i, pileShift, {
+            isPileFront,
+            isPrevRising: prevRising,
+          })
+          const cardBrightness = isCardFocused ? 1 : pileBrightness
+          const cardZ = isCardFocused ? 60 : pileFocusActive ? 51 : pileZ
 
           return (
             <motion.div
               key={`pocket-card-${i}`}
               layout={false}
               data-inner-pocket-card={i}
-              className="absolute overflow-hidden border border-neutral-200/80 bg-white"
+              className={pocketCardClass(usesArt)}
               style={{
                 position: 'fixed',
                 width: portalW,
                 height: portalH,
-                zIndex: pileZ,
+                zIndex: cardZ,
                 transformOrigin: '50% 50%',
-                borderRadius: portalRadius,
-                boxShadow: `0 ${portalShadowY}px ${portalShadowBlur}px rgba(0,0,0,0.14)`,
-                pointerEvents: pileInteractive ? 'auto' : 'none',
+                borderRadius: usesArt ? 0 : portalRadius,
+                boxShadow: usesArt
+                  ? undefined
+                  : placeholderCardBoxShadow(portalShadowY, portalShadowBlur),
+                pointerEvents:
+                  pileInteractive && (!pileFocusActive || isCardFocused) ? 'auto' : 'none',
                 touchAction: 'none',
+                filter: pileStackBrightnessFilter(cardBrightness),
               }}
-              onPointerDown={handlePilePointerDown}
+              onPointerDown={(event) => handlePilePointerDown(event, i)}
               onPointerMove={handlePilePointerMove}
-              onPointerUp={(event) => finishPileDrag(event, true)}
-              onPointerCancel={(event) => finishPileDrag(event, false)}
+              onPointerUp={(event) => finishPileDrag(event, true, i)}
+              onPointerCancel={(event) => finishPileDrag(event, false, i)}
               initial={
                 useGatherSpring || useCenterSpinTween
                   ? {
@@ -514,23 +713,38 @@ export default function FolderInnerCards({
                   : false
               }
               animate={{
-                left: target.left,
-                top: target.top,
-                rotate: target.rotate,
+                left: isCardFocused ? viewportCenter.x - portalW / 2 : target.left,
+                top: isCardFocused ? viewportCenter.y - portalH / 2 : target.top,
+                rotate: isCardFocused ? 0 : target.rotate,
                 /** Land with a slight zoom; retract shrinks back to pocket size. */
-                scale: spreadPhase === 'retract' ? 1 : SPREAD_PROMOTE.centerScale,
-                opacity: prevRising ? 0.15 + 0.85 * pilePrevProgress : 1,
-                y: pileY,
+                scale: spreadPhase === 'retract'
+                  ? 1
+                  : isCardFocused
+                    ? SPREAD_PROMOTE.centerFocusScale
+                    : SPREAD_PROMOTE.centerScale,
+                opacity: prevRising ? 0.15 + 0.85 * pilePrevProgress : isPeerObscured ? 0 : 1,
+                y: pileFocusActive || isCardFocused ? 0 : pileY,
               }}
               transition={
                 spreadPhase === 'settled'
-                  ? {
-                      duration: 0,
-                      y: pileDragActive
-                        ? { duration: 0 }
-                        : { type: 'spring', stiffness: 340, damping: 30 },
-                      opacity: pileDragActive ? { duration: 0 } : { duration: 0.18, ease: 'easeOut' },
-                    }
+                  ? pileFocusGeometryTween
+                    ? {
+                        left: focusTransition,
+                        top: focusTransition,
+                        rotate: focusTransition,
+                        scale: focusTransition,
+                        opacity: { duration: 0.28, ease: 'easeOut' },
+                        y: { duration: 0 },
+                      }
+                    : {
+                        duration: 0,
+                        y: pileDragActive
+                          ? { duration: 0 }
+                          : pileSettledYSpring,
+                        opacity: pileDragActive
+                          ? { duration: 0 }
+                          : { duration: 0.22, ease: 'easeOut' },
+                      }
                   : useRetractTween
                     ? useCenterSpinLayout
                       ? {
@@ -560,11 +774,18 @@ export default function FolderInnerCards({
                         }
               }
             >
-              <FolderInnerCardFace scale={scale * portalScale} />
+              <FolderInnerCardFace
+                scale={scale * portalScale}
+                artSrc={innerCardArt?.[i]?.src}
+              />
+              {isCardFocused ? (
+                <span className="sr-only">Card expanded — tap to close</span>
+              ) : null}
             </motion.div>
           )
         })}
-      </div>
+        </div>
+      </>
     ) : null
 
   return (
@@ -602,6 +823,14 @@ export default function FolderInnerCards({
             }
           >
             {INNER_CARDS.map((card, i) => {
+              const pocketSize = pocketCardSizes[i]
+              const usesArt = Boolean(innerCardArt?.[i])
+              const cardBuryY =
+                innerCardHiddenYForPose(pocketSize.width, pocketSize.height, introFrom, scale) +
+                designPx(
+                  FOLDER_DESIGN.innerCardPocketAnchorY + FOLDER_DESIGN.innerCardCloseBuryExtra,
+                  scale,
+                )
               const dockOnly = 'dockOnly' in card
               /** The trio keeps its intro cadence; deeper cards never play it. */
               const introDelay =
@@ -616,7 +845,7 @@ export default function FolderInnerCards({
               const poseIntro = poseSign * introFrom
               const layerX = poseSign * (sharedLayerX + designPx(card.x, scale))
               const layerY = sharedLayerY + designPx(card.y, scale)
-              const tuckedY = buryY + designPx(card.y, scale)
+              const tuckedY = cardBuryY + designPx(card.y, scale)
               /** Deeper cards stay inside the pocket until the folder docks. */
               const tucked = dockOnly && !folderDocked
               const revealDelay =
@@ -625,23 +854,30 @@ export default function FolderInnerCards({
               const closeStep = dockOnly
                 ? i * INNER_DOCK_REVEAL.closeStaggerSec
                 : (INNER_CARDS.length - 1 - i) * INNER_CARD_INTRO.rotateCloseStaggerSec
+              const pocketPileRank = (i + pileShift) % INNER_CARDS.length
+              const pocketPileFront = pocketPileRank === INNER_CARDS.length - 1
+              const pocketBrightness =
+                tucked || closing
+                  ? 1
+                  : pileStackBrightness(i, pileShift, { isPileFront: pocketPileFront })
 
               return (
                 <motion.div
                   key={`pocket-card-${i}`}
                   layout={false}
                   data-inner-pocket-card={i}
-                  className="absolute overflow-hidden border border-neutral-200/80 bg-white"
+                  className={pocketCardClass(usesArt)}
                   style={{
                     left: mirrored ? undefined : '50%',
                     right: mirrored ? '50%' : undefined,
-                    width: cardWidth,
-                    height: cardHeight,
+                    width: pocketSize.width,
+                    height: pocketSize.height,
                     bottom: POCKET_FLOOR_FROM_FOLDER_BOTTOM,
                     zIndex: i + 1,
                     transformOrigin: mirrored ? '100% 100%' : '0% 100%',
-                    borderRadius: radius,
-                    boxShadow: `0 ${shadowY}px ${shadowBlur}px rgba(0,0,0,0.13)`,
+                    borderRadius: usesArt ? 0 : radius,
+                    boxShadow: usesArt ? undefined : placeholderCardBoxShadow(shadowY, shadowBlur),
+                    filter: pileStackBrightnessFilter(pocketBrightness),
                   }}
                   initial={
                     pocketRestInstant
@@ -756,7 +992,7 @@ export default function FolderInnerCards({
                           }
                   }
                 >
-                  <FolderInnerCardFace scale={scale} />
+                  <FolderInnerCardFace scale={scale} artSrc={innerCardArt?.[i]?.src} />
                 </motion.div>
               )
             })}
